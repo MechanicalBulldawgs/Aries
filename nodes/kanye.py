@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import antigravity, time
-from geometry_msgs.msg import Point, Pose
+import time, rospy
+from geometry_msgs.msg import Point, Pose, PoseStamped
+from std_msgs.msg import Bool, String, Float32
 
 #state constants
 stateStart = 0
@@ -19,6 +20,7 @@ class Autonomy_State_Machine(object):
 		rospy.init_node("autonomy_node")
 		
 		self.hopper_state = None
+		self.autonomous = False
 		
 		self.startComplete = False
 		self.navBinComplete = False
@@ -36,11 +38,11 @@ class Autonomy_State_Machine(object):
 		self.dumpTime = 0
 		
 		#Load parameters
-		mining_waypoints = rospy.get_param("waypoints/mining", "mining")
-		mining_area = rospy.get_param("waypoints/mining_area", "mining_area")
-		bin_waypoint = rospy.get_param("waypoints/bin", "bin")
-		COLLECTOR_SPIN = int(rospy.get_param("collector_settings/spin_signal"))
-		COLLECTOR_STOP = int(rospy.get_param("collector_settings/spin_stop_signal"))
+		self.mining_waypoints = rospy.get_param("waypoints/mining", "mining")
+		self.mining_area = rospy.get_param("waypoints/mining_area", "mining_area")
+		self.bin_waypoint = rospy.get_param("waypoints/bin", "bin")
+		self.COLLECTOR_SPIN = int(rospy.get_param("collector_settings/spin_signal"))
+		self.COLLECTOR_STOP = int(rospy.get_param("collector_settings/spin_stop_signal"))
 		
 		# Load topics
 		hopper_state_topic = rospy.get_param("topics/hopper_state", "hopper_state")
@@ -48,26 +50,34 @@ class Autonomy_State_Machine(object):
 		REACHED_GOAL_TOPIC = rospy.get_param("topics/reached_goal", "reached_goal")
 		GOAL_TOPIC = rospy.get_param("topics/navigation_goals", "nav_goal")
 		ROBOPOSE_TOPIC = rospy.get_param("topics/localization_pose", "beacon_localization_pose")
-		
-
-		
+		OP_MOD_TOPIC = rospy.get_param("topics/op_mode")
+        LIDAR_PIVOT_TOPIC = rospy.get_param("topics/lidar_pivot_cmds", "lidar_pivot_control")
 		
 		# Setup subscriptions
-		rospy.Subscriber(hopper_state_topic, self.hopper_state_callback)
+		rospy.Subscriber(hopper_state_topic, String, self.hopper_state_callback)
 		rospy.Subscriber(REACHED_GOAL_TOPIC, Bool, self.reached_goal_callback)
 		rospy.Subscriber(ROBOPOSE_TOPIC, PoseStamped, self.robot_pose_callback)
+		rospy.Subscriber(OP_MOD_TOPIC, String, self.op_mode_callback)
 		
 		# Setup publishers
-		self.dump_pub = rospy.Publisher(dump_topic, String, queue_size = 10)
+		self.dump_pub = rospy.Publisher(dump_cmds_topic, String, queue_size = 10)
 		self.goal_pub = rospy.Publisher(GOAL_TOPIC, Point, queue_size = 10)
-		
+		self.lidar_pivot_pub = rospy.Publisher(LIDAR_PIVOT_TOPIC, String, queue_size = 10)
+
 		self.current_state = stateStart
 
 	def run(self):
 		'''
 		STATE MACHINE!
 		'''
+		rate = rospy.Rate(10)
+
 		while not rospy.is_shutdown():
+			if self.stateMachineOff():
+				self.current_state = stateStart
+				rate.sleep()
+				continue
+
 			if self.current_state == stateStart:
 				self.start_state()
 			elif self.current_state == stateNavMining:
@@ -84,6 +94,7 @@ class Autonomy_State_Machine(object):
 				self.current_state = stateStart
 			
 			self.transition()
+			rate.sleep()
 
 	def start_state(self):
 		'''
@@ -92,7 +103,12 @@ class Autonomy_State_Machine(object):
 		everything and verifying initilizations.
 		Also, Find the beacon for the first time, the very first time.
 		'''
-		pass
+        # raise the lidar
+        angle_cmd = Float32()
+        angle_cmd.data = math.radians(-1)
+        self.lidar_pivot_pub.publish(angle_cmd)
+        # indicate that the start state is complete
+        self.startComplete = True
 
 	def nav_mining_state(self):
 		'''
@@ -100,7 +116,7 @@ class Autonomy_State_Machine(object):
 		'''
 		if mining_area[1] <= self.robot_pose.position.y:
 			self.navMiningComplete = True
-		elif: self.navMiningFlag:
+		elif self.navMiningFlag:
 				self.navMiningFlag = False
 				goal_point = Point()
 				goal_point.x = mining_waypoints[0][0]
@@ -142,9 +158,9 @@ class Autonomy_State_Machine(object):
 		'''
 		if self.navBinFlag:
 			goal_point = Point()
-			goal_point.x = bin_waypoint[self.waypointsMined][0]
-			goal_point.y = bin_waypoint[self.waypointsMined][1]
-			goal_point.z = bin_waypoint[self.waypointsMined][2]
+			goal_point.x = bin_waypoint[0]
+			goal_point.y = bin_waypoint[1]
+			goal_point.z = bin_waypoint[2]
 			self.goal_pub.publish(goal_point)
 			self.navBinFlag = False
 		elif self.reached_goal:
@@ -206,19 +222,26 @@ class Autonomy_State_Machine(object):
 				if ((self.dumpTime + 10) == time.time()):
 					self.current_state = stateNavMining
 					self.dumpStatePublishedFlag = False
+
+	def stateMachineOff(self):
+		return  not self.autonomous
 			
 	def hopper_state_callback(self, state):
-		self.hopper_state = state
+		self.hopper_state = state.data
 		
 	def reached_goal_callback(self, data):
-		self.reached_goal = data
+		self.reached_goal = data.data
 		
 	def robot_pose_callback(self, data):
 		self.robot_pose = self.transform_pose(data.pose)
 
+	def op_mode_callback(self, data):
+		self.autonomous = (data.data=='autonomous')        
+
 if __name__ == "__main__":
 	try:
 		machine = Autonomy_State_Machine()
+		machine.run()
 	except rospy.ROSInterruptException as er:
 		rospy.logerr(str(er))
 	else:
