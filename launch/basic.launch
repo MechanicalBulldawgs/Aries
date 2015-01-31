@@ -1,0 +1,17 @@
+<launch>
+	
+	<node pkg="aries" type="camera_node.py" name="camera_node"/>
+	<node pkg="aries" type="conveyor_controller.py" name="conveyor_controller"/>
+	<node pkg="aries" type="conveyor_encoder_node.py" name="conveyor_encoder_node"/>
+	<node pkg="aries" type="current_sensor_node.py" name="current_sensor_node"/>
+	<node pkg="aries" type="hopper_controller.py" name="hopper_controller"/>
+	<node pkg="aries" type="hopper_encoder_node.py" name="hopper_encoder_node"/>
+	<node pkg="aries" type="hopper_pressure_node.py" name="hopper_pressure_node"/>
+	<node pkg="aries" type="lcd_screen_manager.py" name="lcd_screen_manager"/>
+	<node pkg="aries" type="lidar_node.py" name="lidar_node"/>
+	<node pkg="aries" type="lidar_pivot_controller.py" name="lidar_pivot_controller"/>
+	<node pkg="aries" type="lidar_pivot_encoder_node.py" name="lidar_pivot_encoder_node"/>
+	<node pkg="aries" type="mover.py" name="mover"/>
+	<node pkg="aries" type="odometry_node.py" name="odometry_node"/>
+	
+</launch>
