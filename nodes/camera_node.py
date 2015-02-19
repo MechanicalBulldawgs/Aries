@@ -7,11 +7,12 @@ from cv_bridge import CvBridge, CvBridgeError
 '''
 This module is responsible for interfacing with camera and publishing camera frames.
 '''
-
-CAM_DEVICE_INDEX = 1 # TODO: put this in .yaml file; this holds device index for camera sensor.
-SHOW_CAM = True 	 # TODO: pub this in a param file (same as above)
+###### DEFAULT GLOBAL VALUES #######
+CAM_DEVICE_INDEX = 1 
+SHOW_CAM = False 	 
 CAM_TOPIC = "cam_image"
 CV_BRIDGE_IMAGE_ENCODING = "bgr8"
+####################################
 
 class camera_node(object):
 
@@ -25,13 +26,35 @@ class camera_node(object):
 		self.cap = None						# Will store opencv capture device
 		self.bridge = CvBridge()			# Bridge used to convert CV images into ROS Image messages
 
+		self._load_ros_parameters()
 		self._initialize_camera()								# initialize camera
 		atexit.register(self._exit_handler)						# Register function to be called upon exit
 		signal.signal(signal.SIGINT, self._signal_handler)		# Register ctrl-c signal handler
 
-		self.cap_pub = rospy.Publisher(cam_topic, Image, queue_size = 10)	# Create publisher for camera images
+		self.cap_pub = rospy.Publisher(CAM_TOPIC, Image, queue_size = 10)	# Create publisher for camera images
 
-		
+	def _load_ros_parameters(self):
+		'''
+		Calling this function tries to update globals for this module using ROS params 
+		'''
+		global CAM_TOPIC, CAM_DEVICE_INDEX, CV_BRIDGE_IMAGE_ENCODING, SHOW_CAM
+
+		try:
+			CAM_DEVICE_INDEX = 			rospy.get_param("/CAM_DEVICE_INDEX")
+		except:
+			pass
+		try:
+			SHOW_CAM = 					rospy.get_param("/DISPLAY_CAM_WINDOW")
+		except:
+			pass
+		try:
+			CAM_TOPIC = 				rospy.get_param("/CAM_TOPIC_NAME")
+		except:
+			pass
+		try:
+			CV_BRIDGE_IMAGE_ENCODING = 	rospy.get_param("/CV_BRIDGE_IMAGE_ENCODING")
+		except:
+			pass
 
 	def _initialize_camera(self):
 		'''
@@ -70,7 +93,6 @@ class camera_node(object):
 		'''
 		print("received signal: " + str(signal))
 		exit()
-
 
 	def _exit_handler(self):
 		'''

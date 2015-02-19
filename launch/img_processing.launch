@@ -1,0 +1,6 @@
+<launch>
+	
+	<rosparam command="load" file="$(find aries)/param/cam_params.yaml" />
+	<node pkg="aries" type="camera_node.py" name="camera_node"/>
+	
+</launch>

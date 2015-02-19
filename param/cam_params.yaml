@@ -1,7 +1,6 @@
 # Parameters for Camera Node
-CAM_TOPIC_NAME: 'cam_image'		# ROS Topic name for camera Image messages
-CV_BRIDGE_IMAGE_ENCODING: 'bgr8'	# Image encoding
-CAM_DEVICE_INDEX: 1			# Device index of camera sensor
-DISPLAY_CAM_WINDOW: true		# Display opencv window of camera feed
-
+CAM_TOPIC_NAME: "hello"             # ROS Topic name for camera Image messages
+CV_BRIDGE_IMAGE_ENCODING: "bgr8"        # Image encoding
+CAM_DEVICE_INDEX: 1                     # Device index of camera sensor
+DISPLAY_CAM_WINDOW: true                # Display opencv window of camera feed
 
