@@ -2,5 +2,6 @@
 	
 	<rosparam command="load" file="$(find aries)/param/cam_params.yaml" />
 	<node pkg="aries" type="camera_node.py" name="camera_node"/>
+	<node pkg="aries" type="blobber.py" name="blobber_node"/>
 	
 </launch>
