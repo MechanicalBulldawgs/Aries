@@ -24,13 +24,12 @@ class Blobber(object):
 		'''
 		Blobber node constructor
 		'''
-		
 		rospy.init_node("blobber_node")
 
 		self.bridge = CvBridge()
 		self.lower_h = 110
-		self.lower_s = 100
-		self.lower_v = 100
+		self.lower_s = 50
+		self.lower_v = 50
 		self.upper_h = 130
 		self.upper_s = 255
 		self.upper_v = 255
@@ -55,8 +54,26 @@ class Blobber(object):
 		lower_bound = np.array([self.lower_h, self.lower_s, self.lower_v])
 		upper_bound = np.array([self.upper_h, self.upper_h, self.upper_v])
 
+		# Threshold the HSV image to produce mask
+		mask = cv2.inRange(hsv_img, lower_bound, upper_bound)
+		# cv2.imshow("Blob Mask", mask)
+		# cv2.waitKey(3)
 
+		# Bitwise-AND mask and original image
+		result_img = cv2.bitwise_and(cv_img, cv_img, mask = mask)
+		
+		nonzero = np.nonzero(mask) 											# grab all indices where mask is nonzero
+		hit_size = nonzero[0].size 											# the number of pixels that are within our target threshold
+		hit_percent = float(hit_size)/(cv_img.shape[0] * cv_img.shape[1]) 	# percent of pixels within our target threshold
 
+		# Calculate centroid of nonzero values in mask
+		centroid = (int(sum(nonzero[1])/float(hit_size)), int(sum(nonzero[0])/float(hit_size))) if hit_size > 0 else (None, None)
+		if not centroid[0] == None:
+			# Draw a circle around centroid
+			cv2.circle(result_img, centroid, radius = 10, color = (0, 255, 0), thickness = 1, lineType = 8, shift = 0)
+
+		cv2.imshow("Blobber", result_img)
+		cv2.waitKey(3)
 
 	def run(self):
 		'''
@@ -78,7 +95,10 @@ class Blobber(object):
 	def _exit_handler(self):
 		'''
 		'''
-		pass
+		try:
+			cv2.destroyAllWindows()
+		except:
+			pass
 
 
 
