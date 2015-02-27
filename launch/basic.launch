@@ -13,5 +13,19 @@
 	<node pkg="aries" type="lidar_pivot_encoder_node.py" name="lidar_pivot_encoder_node"/>
 	<node pkg="aries" type="mover.py" name="mover"/>
 	<node pkg="aries" type="odometry_node.py" name="odometry_node"/>
+
+	<!-- Launch hokuyo node; taken from hokuyo launch files -->
+	<node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
+	    <!-- Remap laser scan topic from /scan to /aries/front_scan -->
+            <remap from="scan" to="aries/front_scan" />
+
+	    <!-- Starts up faster, but timestamps will be inaccurate. --> 
+	    <param name="calibrate_time" type="bool" value="false"/> 
+	    
+	    <!-- Set the port to connect to here -->
+	    <param name="port" type="string" value="/dev/ttyACM0"/> 
+	    
+	    <param name="intensity" type="bool" value="true"/>
+  	</node>
 	
 </launch>

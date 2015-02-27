@@ -27,10 +27,10 @@ class Blobber(object):
 		rospy.init_node("blobber_node")
 
 		self.bridge = CvBridge()
-		self.lower_h = 110
+		self.lower_h = 135
 		self.lower_s = 50
 		self.lower_v = 50
-		self.upper_h = 130
+		self.upper_h = 165
 		self.upper_s = 255
 		self.upper_v = 255
 
