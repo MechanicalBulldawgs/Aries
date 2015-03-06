@@ -1,4 +1,7 @@
 <launch>
+
+	<rosparam command="load" file="$(find aries)/param/cam_params.yaml" />
+	<rosparam command="load" file="$(find aries)/param/ports.yaml" />
 	
 	<node pkg="aries" type="camera_node.py" name="camera_node"/>
 	<node pkg="aries" type="conveyor_controller.py" name="conveyor_controller"/>
