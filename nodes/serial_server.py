@@ -31,18 +31,64 @@ class serial_server(object):
 		while not rospy.is_shutdown():
 
 			if not self.arduino.inWaiting() > 0:
+				rate.sleep()
 				continue
-
+			
 			self.handle_data(self.arduino.readline())
-			rate.sleep()
+			
 
 	def handle_data(self, data):
 		'''
 		This function parses data received from the arduino board.
 		data is the raw string data packet received from the board.
+		data should be in the format: "@IMU &ORIENT$R:VALUE,P:VALUE,Y:VALUE&ACCEL$X:VALUE,Y:VALUE,Z:VALUE&GYRO$X:VALUE,Y:VALUE,Z:VALUE@SENSOR1 ..."
 		'''
 		good_imu_data = False
-		pass
+		try:
+			data = (data.replace("\n", "")).split("@")[1:]	# Split on '@' to separate sensor information from arduino
+		except:
+			rospy.logerr("Received some bad data from Arduino; Don't be alarmed. This happens. Trying again.")
+			return
+
+		#################################
+		imu_sensors = {}
+		# Format: {GYRO: [X, Y, Z], ACCEL: [X, Y, Z], ORIENT: [Roll, Pitch, Yaw]....}
+		#################################
+
+		# Loop through each sensor type's data from arduino
+		for item in data:
+			try:
+				sensor_name = (item.split(" "))[0] # Grab the sensor name
+				sensor_data = (item.split(" "))[1] # Grab the sensor data
+			except:
+				rospy.logerr("Caught packet at a bad time -- Can't parse.")
+				continue
+			if sensor_name == "IMU":
+				##################################
+				# Parse IMU data
+				##################################
+				try:
+					sensor_data = (sensor_data.split("&"))[1:]
+					# parse each individual sensor on IMU
+					for imu_sensor in sensor_data:
+						sensor_data = imu_sensor.split("$")
+						sensor_name = sensor_data[0]
+						sensor_data = sensor_data[1].split(",")
+						imu_sensors[sensor_name] = []
+						for val in sensor_data:
+							val = float(val.split(":")[1])
+							imu_sensors[sensor_name].append(val)
+				except:
+					rospy.logerr("Could not parse IMU sensor data from Arduino")
+					continue
+				else:
+					good_imu_data = True
+
+		#############################################
+		# Publish data (but only if our data is all good)
+		#############################################
+		if good_imu_data:
+			self.publish_imu(imu_sensors)
 		
 	
 	def publish_imu(self, imu_data):
@@ -50,7 +96,43 @@ class serial_server(object):
 			Expects imu_data in the format: {"SENSOR_NAME": [SENSOR VALUE, SENSOR_VALUE, SENSOR_VALUE], "SENSOR_NAME": [SENSOR_VALUE,...], ...}
 
 		"""
-		pass
+		good_imu = True
+		# Set up messages
+		imu_msg = Imu()
+
+		now_time = rospy.Time.now()
+		imu_msg.header.stamp = now_time
+		imu_msg.header.frame_id = 'base_link'
+
+		for key in imu_data.keys():
+			if key == "ORIENT":
+				try:
+					roll = imu_data[key][0]
+					pitch = imu_data[key][1]
+					yaw = imu_data[key][2]
+				except:
+					good_imu = False
+					rospy.logerr("Cannot publish badly formatted imu_data (ORIENTATION).  Will try again next go around.")
+				q = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
+				imu_msg.orientation = Quaternion(*q)
+			elif key == "GYRO":
+				try:
+					imu_msg.angular_velocity.x = imu_data[key][0] 
+					imu_msg.angular_velocity.y = imu_data[key][1]
+					imu_msg.angular_velocity.z = imu_data[key][2] 
+				except:
+					good_imu = False
+					rospy.logerr("Cannot publish badly formatted imu_data (GYRO).  Will try again next go around.")
+			elif key == "ACCEL":
+				try:
+					imu_msg.linear_acceleration.x = imu_data[key][0]  
+					imu_msg.linear_acceleration.y = imu_data[key][1]
+					imu_msg.linear_acceleration.z = imu_data[key][2] 
+				except:
+					good_imu = False
+					rospy.logerr("Cannot publish badly formatted imu_data (ACCEL).  Will try again next go around.")
+		if good_imu:
+			self.imu_pub.publish(imu_msg)
 
 
 	def _cleanup(self):
