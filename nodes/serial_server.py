@@ -5,6 +5,7 @@
 import rospy, tf, serial, atexit
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion
+from std_msgs.msg import Bool
 
 
 class serial_server(object):
@@ -13,15 +14,16 @@ class serial_server(object):
 	def __init__(self):
 		
 		rospy.init_node('serial_server')
-		self.imu_pub = rospy.Publisher("imu", Imu)
+		self.imu_pub = rospy.Publisher("imu", Imu, queue_size = 10)
+		self.hopper_status_pub = rospy.Publisher("hopper_status", Bool, queue_size = 10)
 
 		"""Attempt to get parameters from the ROS server and use them to initialize the list 
 			of touch sensors and the connection to the Arduino"""
 
 		port = rospy.get_param('ports/arduino', '/dev/ttyACM0')
-
+		print("Connecting to Arduino on port: " + str(port))
 		self.arduino = serial.Serial(port, 9600, timeout = 1)
-
+		print("Connected to Arduino on port: " + str(port))
 		atexit.register(self._cleanup)
 
 
@@ -33,7 +35,7 @@ class serial_server(object):
 			if not self.arduino.inWaiting() > 0:
 				rate.sleep()
 				continue
-			
+
 			self.handle_data(self.arduino.readline())
 			
 
@@ -44,12 +46,14 @@ class serial_server(object):
 		data should be in the format: "@IMU &ORIENT$R:VALUE,P:VALUE,Y:VALUE&ACCEL$X:VALUE,Y:VALUE,Z:VALUE&GYRO$X:VALUE,Y:VALUE,Z:VALUE@SENSOR1 ..."
 		'''
 		good_imu_data = False
+		good_dist_inter_data = False
 		try:
 			data = (data.replace("\n", "")).split("@")[1:]	# Split on '@' to separate sensor information from arduino
 		except:
 			rospy.logerr("Received some bad data from Arduino; Don't be alarmed. This happens. Trying again.")
 			return
-
+		#################################
+		hopper_status = None
 		#################################
 		imu_sensors = {}
 		# Format: {GYRO: [X, Y, Z], ACCEL: [X, Y, Z], ORIENT: [Roll, Pitch, Yaw]....}
@@ -83,13 +87,39 @@ class serial_server(object):
 					continue
 				else:
 					good_imu_data = True
+			elif sensor_name == "IR_INTER":
+				##################################
+				# Parse IR Distance interrupter data
+				##################################
+				hopper_status = sensor_data
+				good_dist_inter_data = True
 
 		#############################################
 		# Publish data (but only if our data is all good)
 		#############################################
 		if good_imu_data:
 			self.publish_imu(imu_sensors)
-		
+		if good_dist_inter_data:
+			self.publish_hopper_status(hopper_status)
+	
+	def publish_hopper_status(self, hopper_status):
+		'''
+			Given hopper_status ("0" or "1"), publish ROS message over hopper_status topic.
+		'''	
+		good_stuff = True
+		# Construct message
+		status_msg = Bool()
+		# Check given hopper status
+		if hopper_status == "0":
+			status_msg.data = False
+		elif hopper_status == "1":
+			status_msg.data = True 
+		else:
+			good_stuff = False
+			rospy.logerr("Cannot publish badly formatted hopper status data (IR Distance Interrupter).  Will try again next go around.")
+		# If all good, publish message
+		if good_stuff:
+			self.hopper_status_pub.publish(status_msg)
 	
 	def publish_imu(self, imu_data):
 		"""given imu data from teensy, publish as ROS message
