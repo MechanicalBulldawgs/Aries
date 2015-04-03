@@ -131,8 +131,10 @@ class BeaconLocalizer(object):
 		######################
 		# Find the two posts
 		######################
-		for r_obj in scan_objs:
-			for l_obj in scan_objs:
+		for ri in xrange(0, len(scan_objs)):
+			for li in xrange(ri  + 1, len(scan_objs)):
+				r_obj = scan_objs[ri]
+				l_obj = scan_objs[li]
 				print("==== OBJ DIST ====")
 				print("Right Obj: (Centroid: %d, Angle: %f)" % (r_obj.centroid, math.degrees(r_obj.centroid * scan_msg.angle_increment)))
 				print("Left Obj: (Centroid: %d, Angle: %f)" % (l_obj.centroid, math.degrees(l_obj.centroid * scan_msg.angle_increment)))
