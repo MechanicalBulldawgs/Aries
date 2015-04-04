@@ -12,8 +12,11 @@ Proof of concept/sandbox module for trying out different ways to process lidar d
 SCAN_TOPIC = "scan"
 POST_DIST = 0.6096  	# Distance posts are apart from one another on beacon
 POST_DIST_ERR = 0.025 	# Error allowed in post distance
-MAX_RANGE = 1 		 	# Max Scan range to consider
+MAX_RANGE = 1.25 		# Max Scan range to consider
 LARGE_NUMBER = 9999999	# Arbitrarily large number
+
+LEFT_POST_LOC = (0.3175, 0) 	# Global coordinate of left post
+RIGHT_POST_LOC = (0.9144, 0) 	# Global coordinate of right post
 #####################################
 
 class LaserObject(object):
@@ -69,6 +72,8 @@ class BeaconLocalizer(object):
 
 		atexit.register(self._exit_handler)
 		signal.signal(signal.SIGINT, self._signal_handler)
+
+		self.robot_location = (0, 0)	# Stores current robot location
 
 	def scan_callback(self, data):
 		'''
@@ -130,7 +135,7 @@ class BeaconLocalizer(object):
 		l_edge = None		# Store left edge
 		r_edge = None		# Store right edge
 		last_point = 0
-		edge_thresh = 0.05
+		edge_thresh = 0.025
 		scan_obj = LaserObject()
 		scan_objs = []
 		print("======================")
@@ -169,34 +174,77 @@ class BeaconLocalizer(object):
 			last_point = i
 
 		######################
-		# Find the two posts
+		# Find the beacon (two posts distanced a known distance apart)
 		######################
 		beacon = None
 		min_beacon_err = LARGE_NUMBER
 		for ri in xrange(0, len(scan_objs)):
 			for li in xrange(ri  + 1, len(scan_objs)):
-				r_obj = scan_objs[ri]
-				l_obj = scan_objs[li]
-				dist = self.obj_dist(r_obj, l_obj)
+				r_obj = scan_objs[ri] # Grab right object for easy use
+				l_obj = scan_objs[li] # Grab left object for easy use
+				dist = self.obj_dist(r_obj, l_obj)	# calculate distance between right and left objects
+				# check if dist indicates these two objects are a potential beacon
 				if (dist > (POST_DIST - POST_DIST_ERR)) and (dist < (POST_DIST + POST_DIST_ERR)):
 					beacon_err = abs(dist - POST_DIST)
 					if beacon_err < min_beacon_err:
 						beacon = Beacon(right_post = r_obj, left_post = l_obj, actual_dist = dist, err = beacon_err)
 						min_beacon_err = beacon_err
-
+				## Debugging/verbose information
 				print("==== OBJ DIST ====")
 				print("Right Obj: (Centroid: %d, Angle: %f)" % (r_obj.centroid, math.degrees(r_obj.angle)))
 				print("Left Obj: (Centroid: %d, Angle: %f)" % (l_obj.centroid, math.degrees(l_obj.angle)))
 				print("Distance: " + str(self.obj_dist(r_obj, l_obj)))
+		## More debugging/verbose information
 		if beacon != None:
 			print("~~~ BEACON ~~~")
-			print("(Centroid: %d, Angle: %f) ------ (Centroid %d, Angle %f)" % (beacon.left_post.centroid, beacon.left_post.angle, beacon.right_post.centroid, beacon.right_post.angle))
+			print("(Centroid: %d, Angle: %f) ------ (Centroid %d, Angle %f)" % (beacon.left_post.centroid, math.degrees(beacon.left_post.angle), beacon.right_post.centroid, math.degrees(beacon.right_post.angle)))
 			print("Distance: " + str(beacon.actual_dist) + " (err: " + str(beacon.err) + ")")
 		else:
 			print("~~~ BEACON ~~~")
 			print("Failed to find.")
-
+			return
 		
+		###########################
+		# Localize! (with respect to right post)
+		###########################
+		# NOTE: only works when lidar is facing in the direction of the beacon, lidar at an angle not handled properly yet
+		xloc = 0
+		yloc = 0
+		if beacon.right_post.angle < math.radians(90):
+			#####
+			# CASE 1: Robot is on left side of right post
+			#####
+			print("CASE 1")
+			d = beacon.right_post.distance
+			theta_r = beacon.right_post.angle
+			phi = 90 - theta_r
+			x = d * math.sin(phi)
+			y = d * math.cos(phi)
+			xloc = RIGHT_POST_LOC[0] - x
+			yloc = RIGHT_POST_LOC[1] + y 
+		elif beacon.right_post.angle == math.radians(90):
+			#####
+			# CASE 2: Robot is directly in front of right post
+			#####
+			print("CASE 2")
+			d = beacon.right_post.distance 
+			xloc = RIGHT_POST_LOC[0]
+			yloc = RIGHT_POST_LOC[1] + d 
+		elif beacon.right_post.angle > math.radians(90):
+			#####
+			# CASE 3: Robot is on right side of right post
+			#####
+			print("CASE 3")
+			d = beacon.right_post.distance 
+			theta_r = beacon.right_post.angle 
+			phi = theta_r - 90
+			x = d * math.sin(phi)
+			y = d * math.cos(phi)
+			xloc = RIGHT_POST_LOC[0] + x
+			yloc = RIGHT_POST_LOC[1] + y
+
+		self.robot_location = (xloc, yloc)
+		print("ROBOT LOCATION: (%f, %f)" % (meters_to_inches(self.robot_location[0]), meters_to_inches(self.robot_location[1])))
 
 
 	def _signal_handler(self, signal, frame):
@@ -210,6 +258,13 @@ class BeaconLocalizer(object):
 		Called on script exit 
 		'''
 		pass
+
+def meters_to_inches(val):
+	'''
+	THIS IS FOR Visualization PURPOSES ONLY 
+	DO NOT USE INCHES FOR ANYTHING
+	'''
+	return val * 39.370
 
 
 if __name__ == "__main__":
