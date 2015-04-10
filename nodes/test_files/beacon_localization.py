@@ -15,7 +15,7 @@ POST_DIST_ERR = 0.025 	# Error allowed in post distance
 MAX_RANGE = 1.25 		# Max Scan range to consider
 LARGE_NUMBER = 9999999	# Arbitrarily large number
 
-LEFT_POST_LOC = (0.3175, 0) 	# Global coordinate of left post
+LEFT_POST_LOC = (0.3048, 0) 	# Global coordinate of left post
 RIGHT_POST_LOC = (0.9144, 0) 	# Global coordinate of right post
 #####################################
 
@@ -207,41 +207,8 @@ class BeaconLocalizer(object):
 		###########################
 		# Localize! (with respect to right post)
 		###########################
-		# NOTE: only works when lidar is facing in the direction of the beacon, lidar at an angle not handled properly yet
-		xloc = 0
-		yloc = 0
-		if beacon.right_post.angle < math.radians(90):
-			#####
-			# CASE 1: Robot is on left side of right post
-			#####
-			print("CASE 1")
-			d = beacon.right_post.distance
-			theta_r = beacon.right_post.angle
-			phi = 90 - theta_r
-			x = d * math.sin(phi)
-			y = d * math.cos(phi)
-			xloc = RIGHT_POST_LOC[0] - x
-			yloc = RIGHT_POST_LOC[1] + y 
-		elif beacon.right_post.angle == math.radians(90):
-			#####
-			# CASE 2: Robot is directly in front of right post
-			#####
-			print("CASE 2")
-			d = beacon.right_post.distance 
-			xloc = RIGHT_POST_LOC[0]
-			yloc = RIGHT_POST_LOC[1] + d 
-		elif beacon.right_post.angle > math.radians(90):
-			#####
-			# CASE 3: Robot is on right side of right post
-			#####
-			print("CASE 3")
-			d = beacon.right_post.distance 
-			theta_r = beacon.right_post.angle 
-			phi = theta_r - 90
-			x = d * math.sin(phi)
-			y = d * math.cos(phi)
-			xloc = RIGHT_POST_LOC[0] + x
-			yloc = RIGHT_POST_LOC[1] + y
+		xloc = (beacon.left_post.distance**2 - beacon.right_post.distance**2 - LEFT_POST_LOC[0]**2 + RIGHT_POST_LOC[0]**2) / (2*(RIGHT_POST_LOC[0] - LEFT_POST_LOC[0]))
+		yloc = math.sqrt(beacon.right_post.distance**2 - (xloc - RIGHT_POST_LOC[0])**2)
 
 		self.robot_location = (xloc, yloc)
 		print("ROBOT LOCATION: (%f, %f)" % (meters_to_inches(self.robot_location[0]), meters_to_inches(self.robot_location[1])))
