@@ -207,21 +207,28 @@ class BeaconLocalizer(object):
 		###########################
 		# Localize!
 		###########################
-		#position
-		xloc = (beacon.left_post.distance**2 - beacon.right_post.distance**2 - LEFT_POST_LOC[0]**2 + RIGHT_POST_LOC[0]**2) / (2*(RIGHT_POST_LOC[0] - LEFT_POST_LOC[0]))
-		yloc = math.sqrt(beacon.right_post.distance**2 - (xloc - RIGHT_POST_LOC[0])**2)
+		# calculate global position
+		try:
+			xloc = (beacon.left_post.distance**2 - beacon.right_post.distance**2 - LEFT_POST_LOC[0]**2 + RIGHT_POST_LOC[0]**2) / (2*(RIGHT_POST_LOC[0] - LEFT_POST_LOC[0]))
+			yloc = math.sqrt(beacon.right_post.distance**2 - (xloc - RIGHT_POST_LOC[0])**2)
+		except:
+			print("Failed to calculate global position.")
+		else:
+			self.robot_location = (xloc, yloc)
+			print("ROBOT LOCATION: (%f, %f)" % (meters_to_inches(self.robot_location[0]), meters_to_inches(self.robot_location[1])))
 
-		self.robot_location = (xloc, yloc)
-		print("ROBOT LOCATION: (%f, %f)" % (meters_to_inches(self.robot_location[0]), meters_to_inches(self.robot_location[1])))
-
-		#orientation
-		alpha = math.acos((beacon.actual_dist**2 + beacon.left_post.distance**2 - beacon.right_post.distance**2)/(2*beacon.actual_dist*beacon.left_post.distance))
-		alphaOpp = math.pi - alpha
-		theta = beacon.left_post.angle - math.pi/2
-		globOrient = alphaOpp - theta
-		robOrient = globOrient - math.pi/2
-		print("Global Orientation: %f deg" % (math.degrees(globOrient)))
-		print("Robot Orientation: %f deg" % (math.degrees(robOrient)))
+		# calculate orientation
+		try:
+			alpha = math.acos((beacon.actual_dist**2 + beacon.left_post.distance**2 - beacon.right_post.distance**2) / (2 * beacon.actual_dist * beacon.left_post.distance))
+		except:
+			print("Failed to calculate orientation")
+		else:
+			alphaOpp = math.pi - alpha
+			theta = beacon.left_post.angle - math.pi / 2
+			globOrient = alphaOpp - theta
+			robOrient = globOrient - math.pi / 2
+			print("Global Orientation: %f deg" % (math.degrees(globOrient)))
+			print("Robot Orientation: %f deg" % (math.degrees(robOrient)))
 		
 
 
@@ -239,7 +246,7 @@ class BeaconLocalizer(object):
 
 def meters_to_inches(val):
 	'''
-	THIS IS FOR Visualization PURPOSES ONLY 
+	THIS IS FOR VISUALIZATION PURPOSES ONLY 
 	DO NOT USE INCHES FOR ANYTHING
 	'''
 	return val * 39.370
