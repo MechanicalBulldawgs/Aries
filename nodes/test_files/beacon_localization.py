@@ -205,13 +205,24 @@ class BeaconLocalizer(object):
 			return
 		
 		###########################
-		# Localize! (with respect to right post)
+		# Localize!
 		###########################
+		#position
 		xloc = (beacon.left_post.distance**2 - beacon.right_post.distance**2 - LEFT_POST_LOC[0]**2 + RIGHT_POST_LOC[0]**2) / (2*(RIGHT_POST_LOC[0] - LEFT_POST_LOC[0]))
 		yloc = math.sqrt(beacon.right_post.distance**2 - (xloc - RIGHT_POST_LOC[0])**2)
 
 		self.robot_location = (xloc, yloc)
 		print("ROBOT LOCATION: (%f, %f)" % (meters_to_inches(self.robot_location[0]), meters_to_inches(self.robot_location[1])))
+
+		#orientation
+		alpha = math.acos((beacon.actual_dist**2 + beacon.left_post.distance**2 - beacon.right_post.distance**2)/(2*beacon.actual_dist*beacon.left_post.distance))
+		alphaOpp = math.pi - alpha
+		theta = beacon.left_post.angle - math.pi/2
+		globOrient = alphaOpp - theta
+		robOrient = globOrient - math.pi/2
+		print("Global Orientation: %f deg" % (math.degrees(globOrient)))
+		print("Robot Orientation: %f deg" % (math.degrees(robOrient)))
+		
 
 
 	def _signal_handler(self, signal, frame):
