@@ -2,7 +2,8 @@
 
 import rospy, signal, atexit, math
 from sensor_msgs.msg import LaserScan
-
+from geometry_msgs.msg import Pose, Point, Quaternion
+from tf.transformations import quaternion_from_euler
 
 '''
 Proof of concept/sandbox module for trying out different ways to process lidar data.
@@ -66,7 +67,9 @@ class BeaconLocalizer(object):
 		rospy.Subscriber(SCAN_TOPIC, LaserScan, self.scan_callback)
 
 		self.vis_scan_pub = rospy.Publisher("vis_scan", LaserScan, queue_size = 10)
+		self.pose_pub = rospy.Publisher("beacon_localization_pose", Pose, queue_size = 10)
 
+		self.current_pose = Pose()
 		self.current_scan = LaserScan() # current scan message
 		self.received_scan = False 		# True if we've received a new scan, false if not
 
@@ -119,6 +122,8 @@ class BeaconLocalizer(object):
 		given a scan msg, process 
 		'''
 		current_angle = scan_msg.angle_min   # current angle will always have current angle (in lidar space)
+		good_orientation = False 
+		good_position = False
 
 		##################################
 		# Visualization message (used to visualize software imposed laser range limit)
@@ -216,7 +221,7 @@ class BeaconLocalizer(object):
 		else:
 			self.robot_location = (xloc, yloc)
 			print("ROBOT LOCATION: (%f, %f)" % (meters_to_inches(self.robot_location[0]), meters_to_inches(self.robot_location[1])))
-
+			good_position = True
 		# calculate orientation
 		try:
 			alpha = math.acos((beacon.actual_dist**2 + beacon.left_post.distance**2 - beacon.right_post.distance**2) / (2 * beacon.actual_dist * beacon.left_post.distance))
@@ -229,8 +234,32 @@ class BeaconLocalizer(object):
 			robOrient = globOrient - math.pi / 2
 			print("Global Orientation: %f deg" % (math.degrees(globOrient)))
 			print("Robot Orientation: %f deg" % (math.degrees(robOrient)))
-		
+			good_orientation = True
+		#################################
+		# Build Pose message and publish
+		#################################
+		if good_orientation and good_position:
+			pose = Pose()
+			# set position
+			pose.position.x = self.robot_location[0]
+			pose.position.y = self.robot_location[1]
+			pose.position.z = 0
+			# set orientation
+			roll = 0
+			pitch = 0
+			yaw = robOrient
+			quat = quaternion_from_euler(roll, pitch, yaw)
+			pose.orientation.x = quat[0]
+			pose.orientation.y = quat[1]
+			pose.orientation.z = quat[2]
+			pose.orientation.w = quat[3]
+			# update current pose
+			self.current_pose = pose 
+			# publish pose
+			print("Publishing pose.")
+			self.pose_pub.publish(pose)
 
+		
 
 	def _signal_handler(self, signal, frame):
 		'''
