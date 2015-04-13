@@ -48,6 +48,17 @@ define hokuyo ranger
   #ctrl "lasernoise"
 )
 
+define sick ranger
+(
+  sensor(
+    range [0 4.0]
+    fov 90
+    samples 200
+  )
+  color "black"
+  size [ 0.05 0.05 0.1 ]
+  #ctrl "lasernoise"
+)
 
 define turtlebot position
 (
@@ -58,6 +69,7 @@ define turtlebot position
   gui_nose 1
   drive "diff"
   hokuyo(pose [ 0.0 0.000 0.1 180 ])
+  #sick(pose [ 0.0 0.100 0.0 0])
   bitmap "robot.png"
 )
 
