@@ -6,22 +6,24 @@
 #include <Adafruit_9DOF.h>
 #include <math.h>
 
-#define dt .02
-#define twaitIdeal 20
-#define tmath 5
+#define dt .025
+#define twaitIdeal 25
+#define tmath 21
 #define twaitms twaitIdeal - tmath
+
+#define accelXOffset -0.35
+#define accelYOffset 0.02
+#define accelZOffset 0.00
+
+#define gyroXOffset -0.01
+#define gyroYOffset 0.04
+#define gyroZOffset 0.04
 
 /* Assign a unique ID to the sensors */
 Adafruit_9DOF                dof   = Adafruit_9DOF();
 Adafruit_LSM303_Accel_Unified accel = Adafruit_LSM303_Accel_Unified(30301);
-Adafruit_LSM303_Mag_Unified   mag   = Adafruit_LSM303_Mag_Unified(30302);
 Adafruit_L3GD20_Unified gyro = Adafruit_L3GD20_Unified(20);
 
-
-//from Madgwick, for the MadgwickAHRSupdateIMU
-#define betaDef		0.1f		// 2 * proportional gain
-volatile float beta = betaDef;								// 2 * proportional gain (Kp)
-volatile float q0 = 1.0f, q1 = 0.0f, q2 = 0.0f, q3 = 0.0f;	// quaternion of sensor frame relative to auxiliary frame
 
 
 float pitch, roll, heading, xpos, ypos, xvel, yvel;
@@ -49,13 +51,6 @@ void initSensors()
     Serial.println(F("Ooops, no LSM303 detected ... Check your wiring!"));
     while(1);
   }
-  
-  if(!mag.begin())
-  {
-    // There was a problem detecting the LSM303 ... check your connections
-    Serial.println("Ooops, no LSM303 detected ... Check your wiring!");
-    while(1);
-  }
 }
 
 /**************************************************************************/
@@ -66,11 +61,10 @@ void initSensors()
 void setup(void)
 {
   Serial.begin(115200);
-  Serial.println(F("Adafruit 9 DOF Pitch/Roll/Gyro")); Serial.println("");
+  Serial.println(F("Ares Arduino")); Serial.println("");
   
   /* Initialise the sensors */
   initSensors();
-  
   pitch = 0;
   roll = 0;
   heading = 0;
@@ -87,184 +81,40 @@ void setup(void)
 /**************************************************************************/
 void loop(void)
 {
-  sensors_event_t accel_event;
-  sensors_event_t mag_event;
-  sensors_event_t gyro_event;
-  sensors_vec_t   orientation;
+  sensors_event_t accel_event, accel_eventAvg;
   
-  /* Calculate pitch and roll from the raw accelerometer data */
-  accel.getEvent(&accel_event);
-  dof.accelGetOrientation(&accel_event, &orientation);
+  float time1, time2;
+  time1 = millis();  //This can be removed once we know the time for a loop to execute
   
-  Serial.print("X: "); Serial.print(accel_event.acceleration.x); Serial.print("  ");
-  Serial.print("Y: "); Serial.print(accel_event.acceleration.y); Serial.print("  ");
-//  Serial.print("Z: "); Serial.print(accel_event.acceleration.z); Serial.print("  ");
-  
-  /*Get gyro data*/
-  gyro.getEvent(&gyro_event);
- 
-  /* Display the results (speed is measured in rad/s) */
-//  Serial.print("X: "); Serial.print(gyro_event.gyro.x); Serial.print("  ");
-//  Serial.print("Y: "); Serial.print(gyro_event.gyro.y); Serial.print("  ");
-//  Serial.print("Z: "); Serial.print(gyro_event.gyro.z); Serial.print("  ");
-//  Serial.println("rad/s ");
+  /* Get the raw accelerometer data from an average of measurements */
+  accel.getEvent(&accel_eventAvg);
 
-//  xvel += (accel_event.acceleration.x + 0.037999) * dt;
-//  yvel += (accel_event.acceleration.y - 0.5998899) * dt;
-//  
-//  xpos += xvel * dt;
-//  ypos += yvel * dt;
-//  Serial.print("xpos: ");Serial.print(xpos);
-//  Serial.print(" ypos: ");Serial.print(ypos);
-//  Serial.println(F(""));
+  for(int i = 0; i < 8; i++){
+    accel.getEvent(&accel_event);
+    
+    accel_eventAvg.acceleration.x += accel_event.acceleration.x;
+    accel_eventAvg.acceleration.y += accel_event.acceleration.y;
+    accel_eventAvg.acceleration.z += accel_event.acceleration.z;
+    
+  }
+  
+  accel_eventAvg.acceleration.x = (accel_eventAvg.acceleration.x/10) - accelXOffset;
+  accel_eventAvg.acceleration.y = (accel_eventAvg.acceleration.y/10) - accelYOffset;
+  accel_eventAvg.acceleration.z = (accel_eventAvg.acceleration.z/10) - accelZOffset;
+  
+  Serial.print("X: "); Serial.print(accel_eventAvg.acceleration.x); Serial.print("  ");
+  Serial.print("Y: "); Serial.print(accel_eventAvg.acceleration.y); Serial.print("  ");
+  Serial.print("Z: "); Serial.print(accel_eventAvg.acceleration.z); Serial.println("  ");
 
-  float fromQuaternion;
-  MadgwickAHRSupdateIMU(gyro_event.gyro.x + 0.01, gyro_event.gyro.y - 0.04, gyro_event.gyro.z - 0.05, accel_event.acceleration.x, accel_event.acceleration.y, accel_event.acceleration.z);
+  xvel += (accel_event.acceleration.x) * dt;
+  yvel += (accel_event.acceleration.y) * dt;
   
-  pitch = pitchFromQuaternion() * 180/3.14159265359;
-  roll = rollFromQuaternion() * 180/3.14159265359;
-  heading = yawFromQuaternion() * 180/3.14159265359;
+  time2 = millis();                //this can be removed once we know how long one loop iteration takes
+  Serial.println(time2 - time1);   //this can be removed once we know how long one loop iteration takes
   
-  calcVelocity(accel_event.acceleration.x + 0.04, accel_event.acceleration.y + 0.24);
-  
-  xpos += xvel * dt;
-  ypos += yvel * dt;
-  
-//  Serial.print("roll: ");Serial.print(roll);
-//  Serial.print(" pitch: ");Serial.print(pitch);
-  Serial.print(" heading: ");Serial.print(heading);
-  Serial.println(F(""));
-  
-  Serial.print("xpos: ");Serial.print(xpos);
-  Serial.print(" ypos: ");Serial.print(ypos);
+  Serial.print("xvel: ");Serial.print(xvel);
+  Serial.print(" yvel: ");Serial.print(yvel);
   Serial.println(F(""));
 
   delay(twaitms);
 }
-
-float rollFromQuaternion(){
-  return atan2(2*(q0*q1 + q2*q3), 1 - 2*(q1*q1 + q2*q2));
-}
-
-float pitchFromQuaternion(){
- return asin(2*(q0*q2 - q3*q1)); 
-}
-
-float yawFromQuaternion(){
- return  atan2(2*(q0*q3 + q1*q2), 1 - 2*(q2*q2 + q3*q3));
-}
-
-void calcVelocity(float accelX, float accelY){
-//convert to angled vector
- if((accelX < .5) and (accelX > -.5))
-   accelX = 0;
-   
- if((accelY < .5) and (accelY > -.5))
-   accelY = 0;
- 
- float r, theta;
- r = sqrt(accelX*accelX + accelY*accelY);
- if(accelX != 0){
-   theta = atan(accelY/accelX);
- }
- 
- else{
-   theta = 0;
- }
-   
-  
-
- //turn the angle by the heading, so all x and y are independent of the heading
- theta = theta - heading;
- 
- //return to x and y vectors
- float x, y;
- x = r*cos(theta);
- y = r*sin(theta);
- 
- xvel += x*dt;
- yvel += y*dt;
- 
-}
-
-//---------------------------------------------------------------------------------------------------
-// IMU algorithm update from Madgwick
-
-void MadgwickAHRSupdateIMU(float gx, float gy, float gz, float ax, float ay, float az) {
-	float recipNorm;
-	float s0, s1, s2, s3;
-	float qDot1, qDot2, qDot3, qDot4;
-	float _2q0, _2q1, _2q2, _2q3, _4q0, _4q1, _4q2 ,_8q1, _8q2, q0q0, q1q1, q2q2, q3q3;
-
-	// Rate of change of quaternion from gyroscope
-	qDot1 = 0.5f * (-q1 * gx - q2 * gy - q3 * gz);
-	qDot2 = 0.5f * (q0 * gx + q2 * gz - q3 * gy);
-	qDot3 = 0.5f * (q0 * gy - q1 * gz + q3 * gx);
-	qDot4 = 0.5f * (q0 * gz + q1 * gy - q2 * gx);
-
-	// Compute feedback only if accelerometer measurement valid (avoids NaN in accelerometer normalisation)
-	if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
-
-		// Normalise accelerometer measurement
-		recipNorm = invSqrt(ax * ax + ay * ay + az * az);
-		ax *= recipNorm;
-		ay *= recipNorm;
-		az *= recipNorm;   
-
-		// Auxiliary variables to avoid repeated arithmetic
-		_2q0 = 2.0f * q0;
-		_2q1 = 2.0f * q1;
-		_2q2 = 2.0f * q2;
-		_2q3 = 2.0f * q3;
-		_4q0 = 4.0f * q0;
-		_4q1 = 4.0f * q1;
-		_4q2 = 4.0f * q2;
-		_8q1 = 8.0f * q1;
-		_8q2 = 8.0f * q2;
-		q0q0 = q0 * q0;
-		q1q1 = q1 * q1;
-		q2q2 = q2 * q2;
-		q3q3 = q3 * q3;
-
-		// Gradient decent algorithm corrective step
-		s0 = _4q0 * q2q2 + _2q2 * ax + _4q0 * q1q1 - _2q1 * ay;
-		s1 = _4q1 * q3q3 - _2q3 * ax + 4.0f * q0q0 * q1 - _2q0 * ay - _4q1 + _8q1 * q1q1 + _8q1 * q2q2 + _4q1 * az;
-		s2 = 4.0f * q0q0 * q2 + _2q0 * ax + _4q2 * q3q3 - _2q3 * ay - _4q2 + _8q2 * q1q1 + _8q2 * q2q2 + _4q2 * az;
-		s3 = 4.0f * q1q1 * q3 - _2q1 * ax + 4.0f * q2q2 * q3 - _2q2 * ay;
-		recipNorm = invSqrt(s0 * s0 + s1 * s1 + s2 * s2 + s3 * s3); // normalise step magnitude
-		s0 *= recipNorm;
-		s1 *= recipNorm;
-		s2 *= recipNorm;
-		s3 *= recipNorm;
-
-		// Apply feedback step
-		qDot1 -= beta * s0;
-		qDot2 -= beta * s1;
-		qDot3 -= beta * s2;
-		qDot4 -= beta * s3;
-	}
-
-	// Integrate rate of change of quaternion to yield quaternion
-	q0 += qDot1 * (1.0f * dt);
-	q1 += qDot2 * (1.0f * dt);
-	q2 += qDot3 * (1.0f * dt);
-	q3 += qDot4 * (1.0f * dt);
-
-	// Normalise quaternion
-	recipNorm = invSqrt(q0 * q0 + q1 * q1 + q2 * q2 + q3 * q3);
-	q0 *= recipNorm;
-	q1 *= recipNorm;
-	q2 *= recipNorm;
-	q3 *= recipNorm;
-}
-
-float invSqrt(float x) {
-	float halfx = 0.5f * x;
-	float y = x;
-	long i = *(long*)&y;
-	i = 0x5f3759df - (i>>1);
-	y = *(float*)&i;
-	y = y * (1.5f - (halfx * y * y));
-	return y;
-}
-
