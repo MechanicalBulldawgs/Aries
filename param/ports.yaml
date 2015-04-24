@@ -4,6 +4,9 @@ control_station_comms:
     station_ip: 127.0.0.1
     robot_ip: 127.0.0.1
     control_modes: [autonomous, joystick, supervisory]
+    joystick_mode_name: joystick
+    autonomous_mode_name: autonomous
+    supervisory_mode_name: supervisory
     autonomous_port: 20174
     joystick_port: 20175
     supervisory_port: 20176

@@ -11,7 +11,9 @@ This module is registered as a ROS node and transmits commands from the control 
 ################################
 # Constants
 BUFFER_SIZE = 4096
-JOYSTICK_TELEOP = "joystick"  # TODO: check that these are loaded
+JOYSTICK_MODE_NAME = rospy.get_param("control_station_comms/joystick_mode_name", "joystick")  
+AUTONOMOUS_MODE_NAME = rospy.get_param("control_station_comms/autonomous_mode_name", "autonomous")
+SUPERVISORY_MODE_NAME =  rospy.get_param("control_station_comms/supervisory_mode_name", "supervisory")
 ################################
 
 class Station_Transmitter(object):
@@ -24,9 +26,8 @@ class Station_Transmitter(object):
 
         ################################################
         ####### Load parameters from param files #######
-        self.CONTROL_STATION_IP = rospy.get_param("control_station_comms/station_ip", None)
         self.ROBOT_IP = rospy.get_param("control_station_comms/robot_ip", None)
-        self.CONTROL_TRANS_PORT = rospy.get_param("control_station_comms/control_port", None)
+        self.CONTROL_TRANS_PORT = rospy.get_param("control_station_comms/control_trans_port", None)
         self.ROBOT_TRANS_PORT = rospy.get_param("control_station_comms/robot_trans_port", None)
         # Load mode ports
         self.control_mode_ports = {}
@@ -44,7 +45,7 @@ class Station_Transmitter(object):
         ################################################
         #######   Setup comms with robot   #############
         self.robot_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        rospy.loginfo("Control station relaying messages to robot at " + str(self.ROBOT_IP))
+        rospy.loginfo("Control station relaying messages to robot at " + str(self.ROBOT_IP)) # Transmits messages to robot
         # todo: announce mode ports with rospy.loginfo...
         ################################################
         #######    Subscribe to command topics   #######
@@ -55,6 +56,13 @@ class Station_Transmitter(object):
         '''
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
+            mode = raw_input("Mode: ")
+            try:
+                int(mode)  # just check to make sure value is int
+            except:
+                print("Bad input")
+            else:
+                self.robot_sock.sendto(mode, (self.ROBOT_IP, self.CONTROL_TRANS_PORT))
             rate.sleep()
 
     def joy_callback(self, data):
@@ -64,7 +72,7 @@ class Station_Transmitter(object):
         # Pickle up message
         data_pickle = cPickle.dumps(data)
         # Send pickle
-        self.robot_sock.sendto(data_pickle, (self.ROBOT_IP, self.control_mode_ports[JOYSTICK_TELEOP]))
+        self.robot_sock.sendto(data_pickle, (self.ROBOT_IP, self.control_mode_ports[JOYSTICK_MODE_NAME]))
 
 
 
