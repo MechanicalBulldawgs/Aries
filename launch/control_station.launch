@@ -1,0 +1,7 @@
+<launch>
+	<!-- Used to launch control station software --> 
+
+	<rosparam command="load" file="$(find aries)/param/ports.yaml" />
+	<node name="joystick" pkg="joy" type="joy_node"/>	
+	<node pkg="aries" type="station_transmitter.py" output="screen" name="station_transmitter"/>
+</launch>
