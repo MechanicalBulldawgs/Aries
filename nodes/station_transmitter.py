@@ -25,9 +25,9 @@ class Station_Transmitter(object):
         ################################################
         ####### Load parameters from param files #######
         self.ROBOT_IP = rospy.get_param("control_station_comms/robot_ip", None)
-        self.CONTROL_LINE_PORT  = int(rospy.get_param("control_station_comms/control_line_port", None))
-        self.DATA_LINE_PORT     = int(rospy.get_param("control_station_comms/data_line_port", None))
-        self.STATUS_RETURN_PORT = int(rospy.get_param("control_station_comms/status_return_port", None))
+        self.CONTROL_LINE_PORT  = int(rospy.get_param("control_station_comms/control_line_port", -1))
+        self.DATA_LINE_PORT     = int(rospy.get_param("control_station_comms/data_line_port", -1))
+        self.STATUS_RETURN_PORT = int(rospy.get_param("control_station_comms/status_return_port", -1))
 
         # Load modes
         self.modes_by_val = {}

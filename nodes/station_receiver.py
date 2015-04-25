@@ -30,9 +30,9 @@ class Station_Receiver(object):
         ################################################
         ####### Load parameters from param files #######
         self.STATION_IP         = rospy.get_param("control_station_comms/station_ip", None)
-        self.CONTROL_LINE_PORT  = int(rospy.get_param("control_station_comms/control_line_port", None))
-        self.DATA_LINE_PORT     = int(rospy.get_param("control_station_comms/data_line_port", None))
-        self.STATUS_RETURN_PORT = int(rospy.get_param("control_station_comms/status_return_port", None))
+        self.CONTROL_LINE_PORT  = int(rospy.get_param("control_station_comms/control_line_port", -1))
+        self.DATA_LINE_PORT     = int(rospy.get_param("control_station_comms/data_line_port", -1))
+        self.STATUS_RETURN_PORT = int(rospy.get_param("control_station_comms/status_return_port", -1))
         # Load modes
         self.modes_by_val = {}
         modes = rospy.get_param("control_station_comms/control_modes")
