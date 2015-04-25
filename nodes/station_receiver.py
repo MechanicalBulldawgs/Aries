@@ -29,7 +29,6 @@ class Station_Receiver(object):
         
         ################################################
         ####### Load parameters from param files #######
-        self.STATION_IP         = rospy.get_param("control_station_comms/station_ip", None)
         self.CONTROL_LINE_PORT  = int(rospy.get_param("control_station_comms/control_line_port", -1))
         self.DATA_LINE_PORT     = int(rospy.get_param("control_station_comms/data_line_port", -1))
         self.STATUS_RETURN_PORT = int(rospy.get_param("control_station_comms/status_return_port", -1))
@@ -64,7 +63,6 @@ class Station_Receiver(object):
         self.ctrl_process = Process(target = self.ctrl_line, args = (self.shared_ctrl_mode, self.mode_lock))
         self.ctrl_process.start()
 
-        rospy.loginfo("Robot listening to station at: " + str(self.STATION_IP))
         # todo: announce mode ports with rospy.loginfo...
         atexit.register(self._exit_handler)
 
