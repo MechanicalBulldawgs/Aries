@@ -19,10 +19,16 @@ JOY_LINEAR_AXIS = 1
 JOY_ANGULAR_AXIS = 0
 JOY_DUMP_BTTN = CONTROLLER_BUTTONS["R1"]
 JOY_UNDUMP_BTTN = CONTROLLER_BUTTONS["L1"]
+JOY_CSPIN_BTTN = CONTROLLER_BUTTONS["A"]
+JOY_CRSPIN_BTTN = CONTROLLER_BUTTONS["B"]
 # Constants for hopper (150 - 600)
 HOPPER_DUMP = 300  # value to send when dumping
 HOPPER_STOP = 350  # value to send when stopping hopper
 HOPPER_UNDUMP = 400 # value to send when returning to resting state
+# Constants for conveyor spin (150 - 600)
+COLLECTOR_SPIN = 300
+COLLECTOR_STOP = 350
+COLLECTOR_RSPIN = 400
 ###################################
 
 class Joystick_Controller(object):
@@ -69,8 +75,10 @@ class Joystick_Controller(object):
 		# Get Hopper command
 		##########################
 		hopper_cmd = Int16()
+		# get current button state (4 possible states)
 		dump = True if data.buttons[JOY_DUMP_BTTN] == 1 else False
 		undump = True if data.buttons[JOY_UNDUMP_BTTN] == 1 else False
+		# determine what to do based on state
 		if dump and not undump:
 			hopper_cmd.data = HOPPER_DUMP
 		elif not dump and undump:
@@ -78,6 +86,22 @@ class Joystick_Controller(object):
 		else:
 			hopper_cmd.data = HOPPER_STOP 
 		self.hopper_cmd = hopper_cmd
+		###########################
+		# Get Conveyor Spin command
+		##########################
+		collector_cmd = Int16()
+		spin = True if data.buttons[JOY_CSPIN_BTTN] == 1 else False
+		rspin = True if data.buttons[JOY_CRSPIN_BTTN] == 1 else False
+		if spin and not rspin:
+			collector_cmd.data = COLLECTOR_SPIN
+		elif not spin and rspin:
+			collector_cmd.data = COLLECTOR_RSPIN
+		else:
+			collector_cmd.data = COLLECTOR_STOP
+		self.collector_cmd = collector_cmd
+		###########################
+		# Get Conveyor tilt command
+		##########################
 
 		self.joy_received = True
 
@@ -91,7 +115,7 @@ class Joystick_Controller(object):
 			# Things that always get published every iteration
 			self.drive_pub.publish(self.current_drive_cmd)
 			self.hopper_pub.publish(self.hopper_cmd)
-
+			self.collector_cmd_pub.publish(self.collector_cmd)
 			if not self.joy_received:
 				continue
 			###########################
