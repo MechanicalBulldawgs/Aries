@@ -1,0 +1,2 @@
+ports: {arduino: /dev/ttyACM0, dynamixel: /dev/ttyUSB0}
+baudrates: {dynamixel: 1000000}

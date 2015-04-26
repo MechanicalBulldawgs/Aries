@@ -1,0 +1,22 @@
+import rospy
+import aries.srv
+from std_msgs.msg import Float32
+
+if __name__ == "__main__":
+	rospy.init_node("TESTER")
+	print("Waiting for get_lidar_pivot_position...")
+	rospy.wait_for_service("get_lidar_pivot_position")
+	print("Done waiting for service...")
+	get_lidar_pivot_position = rospy.ServiceProxy("get_lidar_pivot_position", aries.srv.LidarPivotAngle)
+	resp = get_lidar_pivot_position("Garbage")
+	print("Angle: " + str(resp.angle))
+
+	pub = rospy.Publisher("lidar_pivot_control", Float32)
+
+	while True:
+		target = raw_input("Enter Angle: ")
+		try:
+			target = float(target)
+		except:
+			exit()
+		pub.publish(Float32(target))
