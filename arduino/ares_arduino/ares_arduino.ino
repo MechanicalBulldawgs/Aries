@@ -82,12 +82,14 @@ void setup(void)
 void loop(void)
 {
   sensors_event_t accel_event, accel_eventAvg;
+  sensors_event_t gyro_event, gyro_eventAvg;
   
   float time1, time2;
   time1 = millis();  //This can be removed once we know the time for a loop to execute
   
   /* Get the raw accelerometer data from an average of measurements */
   accel.getEvent(&accel_eventAvg);
+  gyro.getEvent(&gyro_eventAvg);
 
   for(int i = 0; i < 8; i++){
     accel.getEvent(&accel_event);
@@ -96,11 +98,21 @@ void loop(void)
     accel_eventAvg.acceleration.y += accel_event.acceleration.y;
     accel_eventAvg.acceleration.z += accel_event.acceleration.z;
     
+    gyro.getEvent(&gyro_event);
+    
+    gyro_eventAvg.gyro.x += gyro_event.gyro.x;
+    gyro_eventAvg.gyro.y += gyro_event.gyro.y;
+    gyro_eventAvg.gyro.z += gyro_event.gyro.z;
+    
   }
   
   accel_eventAvg.acceleration.x = (accel_eventAvg.acceleration.x/10) - accelXOffset;
   accel_eventAvg.acceleration.y = (accel_eventAvg.acceleration.y/10) - accelYOffset;
   accel_eventAvg.acceleration.z = (accel_eventAvg.acceleration.z/10) - accelZOffset;
+  
+  gyro_eventAvg.gyro.x = (gyro_eventAvg.gyro.x/10) - gyroXOffset;
+  gyro_eventAvg.gyro.y = (gyro_eventAvg.gyro.y/10) - gyroYOffset;
+  gyro_eventAvg.gyro.z = (gyro_eventAvg.gyro.z/10) - gyroZOffset;
   
   Serial.print("X: "); Serial.print(accel_eventAvg.acceleration.x); Serial.print("  ");
   Serial.print("Y: "); Serial.print(accel_eventAvg.acceleration.y); Serial.print("  ");
