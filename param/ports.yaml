@@ -1,2 +1,11 @@
 ports: {arduino: /dev/ttyACM0, dynamixel: /dev/ttyUSB0}
 baudrates: {dynamixel: 1000000}
+control_station_comms:
+    robot_ip: 192.168.1.13
+    control_modes: [autonomous, joystick, supervisory]
+    mode_value: [0, 1, 2]
+    control_line_port: 20173
+    data_line_port: 20172
+    status_return_port: 20171
+    
+
