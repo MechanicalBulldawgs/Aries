@@ -38,8 +38,8 @@ void loop()
   RSetpoint = base_linear + angular*base_radius;  //This is the desired velocity of the right wheel. 
  
   //Compute Actual Velocities Based off of IMU Data
-  float xvel = 0;    //xvel = IMU measured base linear velocity
-  float ang_vel = 0; //ang_vel = IMU measured base angular velocity
+  //float xvel = 0;    //xvel = IMU measured base linear velocity
+  float ang_vel = gyro_eventAvg.gyro.z; //ang_vel = IMU measured base angular velocity
   
   //Solve for Measured L/R Wheel Velocities based off measured Angular/Linear Velcoities. 
   LInput = xvel - ang_vel*base_radius;
