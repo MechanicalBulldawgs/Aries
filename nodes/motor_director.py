@@ -15,11 +15,11 @@ class motor_director(object):
 		"""Attempt to get parameters from the ROS server and use them to initialize the list 
 			of touch sensors and the connection to the Arduino"""
 
-		port = rospy.get_param('ports/arduino', '/dev/ttyACM0')
+		port = "/dev/ttyUSB0"#rospy.get_param('ports/arduino', '/dev/ttyACM0')
 		print("Connecting to Arduino on port: " + str(port))
 		self.arduino = serial.Serial(port, 9600, timeout = 1)
 		print("Connected to Arduino on port: " + str(port))
-		rospy.Subscriber("cmd_vel", Twist, cmd_vel_cb)
+		rospy.Subscriber("cmd_vel", Twist, self.cmd_vel_cb)
 		atexit.register(self._exit_handler)
 
 		
@@ -39,13 +39,13 @@ class motor_director(object):
 	Z:[angular velocity]
 	'''
 	
-	def _exit_handle(self):
+	def _exit_handler(self):
 		self.arduino.close()
 
 if __name__ == "__main__":
 	try:
-		ser = serial_server()
+		ser = motor_director()
 	except rospy.ROSInterruptException as er:
 		rospy.logerr(str(er))
 	else:
-		ser.run()
+		rospy.spin()
