@@ -22,10 +22,12 @@ class motor_director(object):
 		rospy.init_node('motor_director')
 		self.cmd_queue = deque() # python's 'deck' data structure.  Used to store queue of commands received from callbacks to be handled.
 		self.queue_lock = Lock()
+		self.prev_cmds = {"HOPPER":None, "LINEARX":None, "ANGULARZ":None, "CONVEYOR_SPIN":None, "CONVEYOR_TILT":None}
+
 		"""Attempt to get parameters from the ROS server and use them to initialize the list 
 			of touch sensors and the connection to the Arduino"""
 
-		port = "/dev/ttyUSB0"#rospy.get_param('ports/arduino', '/dev/ttyACM0')
+		port = "/dev/ttyUSB1"#rospy.get_param('ports/arduino', '/dev/ttyACM0')
 		print("Connecting to Arduino on port: " + str(port))
 		self.arduino = serial.Serial(port, 9600, timeout = 1)
 		print("Connected to Arduino on port: " + str(port))
@@ -44,8 +46,8 @@ class motor_director(object):
 		while not rospy.is_shutdown():
 			with self.queue_lock:
 				if len(self.cmd_queue) > 0:
-					print("cmd_queue length: " + str(len(self.cmd_queue)))
 					cmd = self.cmd_queue.pop()
+					print("Sending: " + str(cmd))
 					self.arduino.write(str(cmd))
 			rate.sleep()
 
@@ -56,23 +58,34 @@ class motor_director(object):
 		linear_cmd = "X:" + str(data.linear.x) + "\n"
 		angular_cmd = "Z:" + str(data.angular.z) + "\n"
 		with self.queue_lock:
-			self.cmd_queue.appendleft(linear_cmd)
-			self.cmd_queue.appendleft(angular_cmd)
+			if self.prev_cmds["LINEARX"] != data.linear.x:
+				self.prev_cmds["LINEARX"] = data.linear.x
+				self.cmd_queue.appendleft(linear_cmd)
+			if self.prev_cmds["ANGULARZ"] != data.angular.z:
+				self.prev_cmds["ANGULARZ"] = data.angular.z
+				self.cmd_queue.appendleft(angular_cmd)
 
 	def dump_callback(self, data):
 		cmd = str(HOPPER_CONTROL) + ":" + str(data.data) + "\n"
 		with self.queue_lock:
-			self.cmd_queue.appendleft(cmd)
+			if self.prev_cmds["HOPPER"] != data.data:
+				self.prev_cmds["HOPPER"] = data.data
+				self.cmd_queue.appendleft(cmd)
 
 	def collector_spin_callback(self, data):
-		cmd = str(CONVEYOR_SPIN_CONTROL) + ":" + str(data.data) + "\n"
+		cmd = str(CONVEYOR_SPIN) + ":" + str(data.data) + "\n"
 		with self.queue_lock:
-			self.cmd_queue.appendleft(cmd)
+			if self.prev_cmds["CONVEYOR_SPIN"] != data.data:
+				self.prev_cmds["CONVEYOR_SPIN"] = data.data
+				self.cmd_queue.appendleft(cmd)
 
 	def collector_tilt_callback(self, data):
-		cmd = str(CONVEYOR_TILT_CONTROL) + ":" + str(data.data) + "\n"
+		cmd = str(CONVEYOR_TILT) + ":" + str(data.data) + "\n"
 		with self.queue_lock:
-			self.cmd_queue.appendleft(cmd)
+			if self.prev_cmds["CONVEYOR_TILT"] != data.data:
+				self.prev_cmds["CONVEYOR_TILT"] = data.data
+				self.cmd_queue.appendleft(cmd)
+
 	
 	def _exit_handler(self):
 		self.arduino.close()
