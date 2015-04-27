@@ -33,8 +33,8 @@ double RSetpoint, RInput, ROutput;
 double LSetpoint, LInput, LOutput;
 
 //Specify the links and initial tuning parameters
-PID Left_MotorPID(&LInput, &LOutput, &LSetpoint,2,5,1, DIRECT);
-PID Right_MotorPID(&RInput, &ROutput, &RSetpoint,2,5,1, DIRECT); 
+PID Left_MotorPID(&LInput, &LOutput, &LSetpoint,0.5,0,0, DIRECT);
+PID Right_MotorPID(&RInput, &ROutput, &RSetpoint,0.5,0,0, DIRECT); 
 //Constants for robot motor control velocity equations
 const float base_radius = .25;
 const float wheel_radius = .1016;
@@ -161,9 +161,12 @@ void loop(void)
     
     delay(10);
     char label = Serial.read();
+    Serial.print("Label: "); Serial.print(label); 
     char separator = Serial.read();
+    Serial.print("; Separator: "); Serial.println(separator); 
     if(separator == ':'){
       int value = Serial.parseInt();
+      Serial.print("; Value: "); Serial.println(value);
       switch(label) {
        case '0': 
           pwm.setPWM(0,0,value);
@@ -172,7 +175,8 @@ void loop(void)
           pwm.setPWM(1,0,value);
           break;
        case '2': 
-          pwm.setPWM(2,0,value);
+          pwm.setPWM(2,0,400);
+          Serial.println("case 2");
           break;
        case '3': 
           pwm.setPWM(3,0,value);
@@ -219,6 +223,8 @@ void loop(void)
        case 'Z': 
           base_angular = value;
           break;
+       default: 
+         break;
          
        
       }
@@ -251,10 +257,14 @@ void loop(void)
   
   //Convert All Velocities to Respective PWM Signal
     //This is based off motor characteristics, gearing, wheel sizes, etc.
+    Serial.print("ROutput: ");
+    Serial.println(ROutput);
+    Serial.print("LOutput: ");
+    Serial.println(LOutput);
     
     //Equation relating wheel velcoity to PWM value
-    int R_PWM = (280*ROutput) + 375;
-    int L_PWM = (280*LOutput) + 375; 
+    int R_PWM = (1.72*ROutput) + 375;
+    int L_PWM = (1.72*LOutput) + 375; 
     
   
     
