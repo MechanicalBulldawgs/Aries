@@ -22,11 +22,11 @@ JOY_UNDUMP_BTTN = CONTROLLER_BUTTONS["L1"]
 JOY_CSPIN_BTTN = CONTROLLER_BUTTONS["A"]
 JOY_CRSPIN_BTTN = CONTROLLER_BUTTONS["B"]
 # Constants for hopper (150 - 600)
-HOPPER_DUMP = 300  # value to send when dumping
+HOPPER_DUMP = 340  # value to send when dumping
 HOPPER_STOP = 370  # value to send when stopping hopper
 HOPPER_UNDUMP = 400 # value to send when returning to resting state
 # Constants for conveyor spin (150 - 600)
-COLLECTOR_SPIN = 300
+COLLECTOR_SPIN = 340
 COLLECTOR_STOP = 370
 COLLECTOR_RSPIN = 400
 ###################################
