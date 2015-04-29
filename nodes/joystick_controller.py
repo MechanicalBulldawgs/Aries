@@ -35,9 +35,9 @@ COLLECTOR_SPIN = 340
 COLLECTOR_STOP = 370
 COLLECTOR_RSPIN = 400
 # Constants for conveyor tilt (150 - 600)
-COLLECTOR_TILT = 340
+COLLECTOR_TILT = 365
 COLLECTOR_TSTOP = 370
-COLLECTOR_UNTILT = 400
+COLLECTOR_UNTILT = 375
 ###################################
 
 class Joystick_Controller(object):
