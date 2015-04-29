@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import socket, atexit, signal, rospy, cPickle
-import roslib; roslib.load_manifest("aries")
 
 from multiprocessing import Process, Value, Lock
 from sensor_msgs.msg import Joy
@@ -50,8 +49,8 @@ class Station_Receiver(object):
         op_mode_topic = rospy.get_param("topics/op_mode", "operation_mode")
         joystick_topic = rospy.get_param("topics/joystick", "joy")
 
-        self.mode_pub = rospy.Publisher(op_mode_topic, String)
-        self.joy_pub = rospy.Publisher(joystick_topic, Joy)
+        self.mode_pub = rospy.Publisher(op_mode_topic, String, queue_size = 10)
+        self.joy_pub = rospy.Publisher(joystick_topic, Joy, queue_size = 10)
         ################################################
         #######   Setup comms with robot   #############
         self.control_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # Receives control messages from station
