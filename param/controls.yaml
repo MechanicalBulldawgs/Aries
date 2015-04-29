@@ -1,0 +1,9 @@
+topics:
+    joystick: joy                                   # ROS Joy msgs
+    op_mode: operation_mode                         # ROS String msgs
+    drive_cmds: cmd_vel                             # ROS Twist msgs
+    hopper_cmds: hopper_control                     # ROS Int16 msgs
+    collector_spin_cmds: collector_spin_control     # ROS Int16 msgs
+    collector_tilt_cmds: collector_tilt_control     # ROS Int16 msgs
+    
+	

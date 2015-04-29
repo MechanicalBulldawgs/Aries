@@ -59,13 +59,19 @@ class Joystick_Controller(object):
         self.collector_tilt = None      # Stores current collector tilt command
         self.joy_received = False       
 
-        #TODO: MAKE TOPIC NAMES PARAMETERS THAT CAN BE LOADED
-        self.drive_pub = rospy.Publisher("cmd_vel", Twist, queue_size = 10)
-        self.hopper_pub = rospy.Publisher("hopper_control", Int16, queue_size = 10)
-        self.collector_cmd_pub = rospy.Publisher("collector_spin_control", Int16, queue_size = 10)
-        self.collector_tilt_pub = rospy.Publisher("collector_tilt_control", Int16, queue_size = 10)
-
-        rospy.Subscriber("joy", Joy, self.joy_callback)
+        # Load topic names
+        joystick_topic            = rospy.get_param("topics/joystick", "joy")
+        drive_topic               = rospy.get_param("topics/drive_cmds", "cmd_vel")
+        hopper_cmds_topic         = rospy.get_param("topics/hopper_cmds", "hopper_control")
+        collector_spin_cmds_topic = rospy.get_param("topics/collector_spin_cmds", "collector_spin_control")
+        collector_tilt_cmds_topic = rospy.get_param("topics/collector_tilt_cmds", "collector_tilt_control")
+        # Setup publishers
+        self.drive_pub = rospy.Publisher(drive_topic, Twist, queue_size = 10)
+        self.hopper_pub = rospy.Publisher(hopper_cmds_topic, Int16, queue_size = 10)
+        self.collector_spin_pub = rospy.Publisher(collector_spin_cmds_topic, Int16, queue_size = 10)
+        self.collector_tilt_pub = rospy.Publisher(collector_tilt_cmds_topic, Int16, queue_size = 10)
+        # Setup subscribers
+        rospy.Subscriber(joystick_topic, Joy, self.joy_callback)
 
         atexit.register(self._exit_handler)
 
@@ -139,13 +145,12 @@ class Joystick_Controller(object):
             # Things that always get published every iteration
             self.drive_pub.publish(self.current_drive_cmd)
             self.hopper_pub.publish(self.hopper_cmd)
-            self.collector_cmd_pub.publish(self.collector_cmd)
+            self.collector_spin_pub.publish(self.collector_cmd)
             self.collector_tilt_pub.publish(self.collector_tilt)
             if not self.joy_received:
                 continue
             ###########################
             # Things that only get published upon receiving a new joy message
-
             rate.sleep()
 
     def _exit_handler(self):
