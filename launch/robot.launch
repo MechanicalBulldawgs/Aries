@@ -2,6 +2,8 @@
 	<!-- Used to launch control station software --> 
 
 	<rosparam command="load" file="$(find aries)/param/ports.yaml" />
+    <rosparam command="load" file="$(find aries)/param/controls.yaml" />
+
 	<node pkg="aries" type="motor_director.py" output="screen" name="motor_director"/>
 	<node pkg="aries" type="joystick_controller.py" output="screen" name="joystick_controller"/>
 	<node pkg="aries" type="station_receiver.py" output="screen" name="station_receiver"/>
