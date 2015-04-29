@@ -27,7 +27,7 @@ class motor_director(object):
 		"""Attempt to get parameters from the ROS server and use them to initialize the list 
 			of touch sensors and the connection to the Arduino"""
 
-		port = "/dev/ttyUSB1"#rospy.get_param('ports/arduino', '/dev/ttyACM0')
+		port = "/dev/ttyUSB0"#rospy.get_param('ports/arduino', '/dev/ttyACM0')
 		print("Connecting to Arduino on port: " + str(port))
 		self.arduino = serial.Serial(port, 9600, timeout = 1)
 		print("Connected to Arduino on port: " + str(port))
