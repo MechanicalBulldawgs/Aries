@@ -5,5 +5,3 @@ topics:
     hopper_cmds: hopper_control                     # ROS Int16 msgs
     collector_spin_cmds: collector_spin_control     # ROS Int16 msgs
     collector_tilt_cmds: collector_tilt_control     # ROS Int16 msgs
-    
-	
