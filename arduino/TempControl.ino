@@ -245,71 +245,38 @@ void loop(void)
      Serial.flush(); 
     }
     
+  }
     
-  
+    
+  LOut = (base_linear*.902) + 370;
+  ROut = (base_angular*.902) + 370;
+ 
+  if (LOut > 600.0) {
+     LOut = 600.0;
   }  
-
+  else if (ROut > 600.0) {
+      ROut = 600.0; 
+  }
+  else if (LOut < 150.0) {
+   LOut = 150; 
+  }
+  else if (ROut < 150.0) {
+   ROut = 150; 
+  }
   
+  Serial.print(ROut); Serial.print(" ");
+  Serial.println(LOut);
   
-  //Solve for Intended L/R Wheel Velocities Based of intended Angular/Linear Velocities.
-  float LSet = base_linear - base_angular*base_radius;  //This is the desired velocity of the left wheel.
-  float RSet = base_linear + base_angular*base_radius;  //This is the desired velocity of the right wheel. 
-  
-  //Converts L/R Set to values between 0 to 255.
-  LSetpoint = 639*(LSet) + 512;
-  RSetpoint = 639*(RSet) + 512; 
-  
-  Serial.print("LSet: "); Serial.println(LSetpoint);
-  Serial.print("RSet: "); Serial.println(RSetpoint);
-  
-  //Compute Actual Velocities Based off of IMU Data
-  //xvel = IMU measured base linear velocity
-  float ang_vel = gyro_eventAvg.gyro.z; //ang_vel = IMU measured base angular velocity
-  Serial.print("xvel: ");    Serial.println(xvel);
-  Serial.print("ang_vel: "); Serial.println(ang_vel);
-  
-  //Solve for Measured L/R Wheel Velocities based off measured Angular/Linear Velcoities. 
-  float LIn = xvel - ang_vel*base_radius;
-  float RIn = xvel + ang_vel*base_radius;  
-  Serial.print("LIn: "); Serial.println(LIn);
-  Serial.print("RIn: "); Serial.println(RIn);
-  
-  LInput = 639*(LIn) + 512;
-  RInput = 639*(RIn) + 512; 
-  
-  Serial.print("LInput: "); Serial.println(LInput);
-  Serial.print("RInput: "); Serial.println(RInput);
-  
-  //Compute function(Uses the PID controller) 
-  Left_MotorPID.Compute();
-  Right_MotorPID.Compute();
-  
-  //Convert All Velocities to Respective PWM Signal
-    //This is based off motor characteristics, gearing, wheel sizes, etc.
-    Serial.print("ROutput: ");
-    Serial.println(ROutput);
-    Serial.print("LOutput: ");
-    Serial.println(LOutput);
-    
-   
-    Serial.println(ROutput);
-    Serial.println(LOutput);    
- 
-  ROut = (ROutput*.902) + 370;
-  LOut = (LOutput*.902) + 370;
- Serial.print("Rout: "); Serial.println(ROut);
- Serial.print("Lout: "); Serial.println(LOut);
- 
-    
-  //Send the PWM Signal to each wheel
-  pwm.setPWM(R_motor,0,ROut);
-  pwm.setPWM(L_motor,0,LOut);
+  pwm.setPWM(R_motor,0,(int)ROut);
+  pwm.setPWM(L_motor,0,(int)LOut);
   
   
   Serial.println();
   //delay(100);
     time2 = millis();                //this can be removed once we know how long one loop iteration takes
-  Serial.print(time2 - time1);
+  //Serial.print(time2 - time1);
   
   
+
+
 }
