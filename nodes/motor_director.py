@@ -62,8 +62,8 @@ class motor_director(object):
         '''
         Command velocity callback.  
         '''
-        linear_cmd = "X:" + str(data.linear.x) + "\n"
-        angular_cmd = "Z:" + str(data.angular.z) + "\n"
+        linear_cmd = "0:" + str(data.linear.x) + "\n"
+        angular_cmd = "1:" + str(data.angular.z) + "\n"
         with self.queue_lock:
             if self.prev_cmds["LINEARX"] != data.linear.x:
                 self.prev_cmds["LINEARX"] = data.linear.x

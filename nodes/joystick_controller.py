@@ -31,13 +31,13 @@ HOPPER_DUMP = 340  # value to send when dumping
 HOPPER_STOP = 370  # value to send when stopping hopper
 HOPPER_UNDUMP = 400 # value to send when returning to resting state
 # Constants for conveyor spin (150 - 600)
-COLLECTOR_SPIN = 340
+COLLECTOR_SPIN = 320
 COLLECTOR_STOP = 370
-COLLECTOR_RSPIN = 400
+COLLECTOR_RSPIN = 420
 # Constants for conveyor tilt (150 - 600)
-COLLECTOR_TILT = 365
+COLLECTOR_TILT = 340
 COLLECTOR_TSTOP = 370
-COLLECTOR_UNTILT = 375
+COLLECTOR_UNTILT = 400
 ###################################
 
 class Joystick_Controller(object):
