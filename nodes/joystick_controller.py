@@ -27,9 +27,9 @@ JOY_CRSPIN_BTTN = CONTROLLER_BUTTONS["B"]
 JOY_CTILT_BTTN = CONTROLLER_BUTTONS["X"]
 JOY_CUTILT_BTTN = CONTROLLER_BUTTONS["Y"]
 # Constants for hopper (150 - 600)
-HOPPER_DUMP = 340  # value to send when dumping
+HOPPER_DUMP = 320  # value to send when dumping
 HOPPER_STOP = 370  # value to send when stopping hopper
-HOPPER_UNDUMP = 400 # value to send when returning to resting state
+HOPPER_UNDUMP = 420 # value to send when returning to resting state
 # Constants for conveyor spin (150 - 600)
 COLLECTOR_SPIN = 320
 COLLECTOR_STOP = 370
@@ -84,8 +84,22 @@ class Joystick_Controller(object):
         ######
         twister = Twist()
         # TANK DRIVE
-        twister.linear.x = MAX_TANK_SPEED * data.axes[JOY_TANK_L_AXIS]
-        twister.angular.z = MAX_TANK_SPEED * data.axes[JOY_TANK_R_AXIS]
+        twister.linear.x = float(MAX_TANK_SPEED) * data.axes[JOY_TANK_L_AXIS]
+        twister.angular.z = float(MAX_TANK_SPEED) * data.axes[JOY_TANK_R_AXIS]
+        # if data.axes[JOY_TANK_L_AXIS] > 0:
+        #     twister.linear.x = 400
+        # elif data.axes[JOY_TANK_L_AXIS] < 0:
+        #     twister.linear.x = 340
+        # else:
+        #     twister.linear.x = 370
+
+        # if data.axes[JOY_TANK_R_AXIS] > 0:
+        #     twister.angular.z = 400
+        # elif data.axes[JOY_TANK_R_AXIS] < 0:
+        #     twister.angular.z = 340
+        # else:
+        #     twister.angular.z = 370
+
         # Real Robot Drive
         #twister.angular.z = MAX_ANGULAR_SPEED * data.axes[JOY_ANGULAR_AXIS]
         #twister.linear.x = MAX_LINEAR_SPEED * data.axes[JOY_LINEAR_AXIS]

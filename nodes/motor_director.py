@@ -49,7 +49,7 @@ class motor_director(object):
         '''
         This function processes cmds in cmd queue
         '''
-        rate = rospy.Rate(200)
+        rate = rospy.Rate(100)
         while not rospy.is_shutdown():
             with self.queue_lock:
                 if len(self.cmd_queue) > 0:
@@ -62,8 +62,8 @@ class motor_director(object):
         '''
         Command velocity callback.  
         '''
-        linear_cmd = "0:" + str(data.linear.x) + "\n"
-        angular_cmd = "1:" + str(data.angular.z) + "\n"
+        linear_cmd = "0:" + str(float(int(data.linear.x))) + "\n"
+        angular_cmd = "1:" + str(float(int(data.angular.z))) + "\n"        
         with self.queue_lock:
             if self.prev_cmds["LINEARX"] != data.linear.x:
                 self.prev_cmds["LINEARX"] = data.linear.x
