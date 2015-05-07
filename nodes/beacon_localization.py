@@ -261,6 +261,7 @@ class BeaconLocalizer(object):
             roll = 0
             pitch = 0
             yaw = robOrient
+            #yaw = globOrient
             quat = quaternion_from_euler(roll, pitch, yaw)
             pose.orientation.x = quat[0]
             pose.orientation.y = quat[1]

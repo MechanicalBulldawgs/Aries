@@ -12,6 +12,8 @@ Output: Twist commands
 ######################################
 # Global constants
 GOAL_FORCE_CONST = 1.0  # magnitude used when calculating goal force
+ANGULAR_SPEED = 1.0
+LINEAR_SPEED = 1.0
 ######################################
 # Load global topic names from ros params
 ######################################
@@ -66,32 +68,78 @@ class PFieldNavigator(object):
             # grab current goal and pose information
             nav_goal = self.current_goal
             robot_pose = self.robot_pose 
+            print("==============================")
+            print(" **  Goal: \n" + str(nav_goal))
+            print(" ** Position: \n" + str(robot_pose.position))
             # Calculate goal force
             goal_force = self.calc_goal_force(nav_goal, robot_pose)
-            print(str(goal_force))
+            print("Goal force: " + str(goal_force))
             # Calculate force from obstacles
-
+            # TODO
             # Get final drive vector (goal, obstacle forces)
-
+            # TODO
             # Calculate twist message from drive vector
-
+            drive_cmd = self.drive_from_force(goal_force, robot_pose)
+            #self.drive_pub.publish(drive_cmd)
             rate.sleep()
+
+    def drive_from_force(self, force, robot_pose):
+        '''
+        Given a force vector, generate Twist message 
+        '''
+        cmd = Twist()
+        max_angle = math.pi
+        spin_thresh = math.pi 
+         # convert quat orientation to eulers
+        robot_orient = euler_from_quaternion([robot_pose.orientation.x, robot_pose.orientation.y, robot_pose.orientation.z, robot_pose.orientation.w]) 
+        # Get force angle (in global space)
+        force_angle = math.atan2(force[1], force[0])
+        # put force angle in robot space
+        force_angle = -1 * (force_angle - (math.pi / 2.0))
+        # get force magnitude
+        force_mag = math.hypot(force[0], force[1])
+        # get difference to robot's current yaw
+        angle_diff = self.wrap_angle(force_angle - robot_orient[2])
+        print("Robot Yaw: " + str(math.degrees(robot_orient[2])))
+        print("Force angle: " + str(math.degrees(force_angle)))
+        print("Force Magnitude: " + str(force_mag))
+        print("Angle diff: " + str(math.degrees(angle_diff)))
+        if force_mag == 0: return cmd
+        ang_vel = (angle_diff / max_angle) * ANGULAR_SPEED
+        lin_vel = 0 if abs(angle_diff) >= spin_thresh else force_mag
+
+        print("Ang vel: " + str(ang_vel))
+        print("Lin Vel: " + str(lin_vel))
+        cmd.angular.z = ang_vel
+        cmd.linear.x = lin_vel
+
+        return cmd
 
     def calc_goal_force(self, nav_goal, robot_pose):
         '''
         given a goal point and a robot pose, calculate and return x and y components of goal force
         '''
+        GOAL_THRESH = 0.05 # radius around goal that it's okay to stop in 
+        FIELD_SPREAD = 10.0 # radius around goal where pfield is scaled
+        ALPHA = 1.0
+        # get distance between goal and robot
+        dist = math.sqrt((nav_goal.x - robot_pose.position.x)**2 + (nav_goal.y - robot_pose.position.y)**2)
         # get angle to goal
         angle_to_goal = math.atan2(nav_goal.y - robot_pose.position.y, nav_goal.x - robot_pose.position.x)
-        # convert robot pose orientation from quats to eulers
-        robot_orient = euler_from_quaternion([robot_pose.orientation.x, robot_pose.orientation.y, robot_pose.orientation.z, robot_pose.orientation.w]) 
         # get force angle
-        force_angle = self.wrap_angle(angle_to_goal - robot_orient[2])
+        force_angle = self.wrap_angle(angle_to_goal)
         # math the components
-        s_x = GOAL_FORCE_CONST * math.cos(force_angle)
-        s_y = GOAL_FORCE_CONST * math.sin(force_angle)
-        return (s_x, s_y)
+        if dist < GOAL_THRESH:
+            d_x = 0
+            d_y = 0
+        elif GOAL_THRESH <= dist <= FIELD_SPREAD + GOAL_THRESH:
+            d_x = ALPHA * (dist - GOAL_THRESH) * math.cos(force_angle)
+            d_y = ALPHA * (dist - GOAL_THRESH) * math.sin(force_angle)
+        else: #dist > (FIELD_SPREAD + GOAL_THRESH)
+            d_x = ALPHA * FIELD_SPREAD * math.cos(force_angle)
+            d_y = ALPHA * FIELD_SPREAD * math.sin(force_angle)
 
+        return (d_x, d_y)
 
     def wrap_angle(self, angle):
         #This function will take any angle and wrap it into the range [-pi, pi]
