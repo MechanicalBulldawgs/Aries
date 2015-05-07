@@ -79,7 +79,7 @@ class PFieldNavigator(object):
             # Get final drive vector (goal, obstacle forces)
             # TODO
             # Calculate twist message from drive vector
-            #drive_cmd = self.drive_from_force(goal_force, robot_pose)
+            drive_cmd = self.drive_from_force(goal_force, robot_pose)
             #self.drive_pub.publish(drive_cmd)
             rate.sleep()
 
@@ -88,19 +88,31 @@ class PFieldNavigator(object):
         Given a force vector, generate Twist message 
         '''
         cmd = Twist()
-        max_angle_diff = math.pi * 2
+        max_angle = math.pi
         spin_thresh = math.pi 
          # convert quat orientation to eulers
         robot_orient = euler_from_quaternion([robot_pose.orientation.x, robot_pose.orientation.y, robot_pose.orientation.z, robot_pose.orientation.w]) 
-        # Get force angle
+        # Get force angle (in global space)
         force_angle = math.atan2(force[1], force[0])
+        # put force angle in robot space
+        force_angle = -1 * (force_angle - (math.pi / 2.0))
         # get force magnitude
         force_mag = math.hypot(force[0], force[1])
         # get difference to robot's current yaw
         angle_diff = self.wrap_angle(force_angle - robot_orient[2])
-        # Keep it simple for now, just use constant linear speed
-        cmd.angular.z = (angle_diff / float(max_angle_diff)) * ANGULAR_SPEED
-        cmd.linear.x = 0 if angle_diff > spin_thresh else force_mag * LINEAR_SPEED
+        print("Robot Yaw: " + str(math.degrees(robot_orient[2])))
+        print("Force angle: " + str(math.degrees(force_angle)))
+        print("Force Magnitude: " + str(force_mag))
+        print("Angle diff: " + str(math.degrees(angle_diff)))
+        if force_mag == 0: return cmd
+        ang_vel = (angle_diff / max_angle) * ANGULAR_SPEED
+        lin_vel = 0 if abs(angle_diff) >= spin_thresh else force_mag
+
+        print("Ang vel: " + str(ang_vel))
+        print("Lin Vel: " + str(lin_vel))
+        cmd.angular.z = ang_vel
+        cmd.linear.x = lin_vel
+
         return cmd
 
     def calc_goal_force(self, nav_goal, robot_pose):
@@ -114,12 +126,8 @@ class PFieldNavigator(object):
         dist = math.sqrt((nav_goal.x - robot_pose.position.x)**2 + (nav_goal.y - robot_pose.position.y)**2)
         # get angle to goal
         angle_to_goal = math.atan2(nav_goal.y - robot_pose.position.y, nav_goal.x - robot_pose.position.x)
-        # convert quat orientation to eulers
-        robot_orient = euler_from_quaternion([robot_pose.orientation.x, robot_pose.orientation.y, robot_pose.orientation.z, robot_pose.orientation.w]) 
-        print("Robot Yaw: " + str(math.degrees(robot_orient[2])))
         # get force angle
-        force_angle = self.wrap_angle(angle_to_goal - robot_orient[2])
-        print("Force angle: " + str(math.degrees(force_angle)))
+        force_angle = self.wrap_angle(angle_to_goal)
         # math the components
         if dist < GOAL_THRESH:
             d_x = 0
@@ -130,6 +138,7 @@ class PFieldNavigator(object):
         else: #dist > (FIELD_SPREAD + GOAL_THRESH)
             d_x = ALPHA * FIELD_SPREAD * math.cos(force_angle)
             d_y = ALPHA * FIELD_SPREAD * math.sin(force_angle)
+
         return (d_x, d_y)
 
     def wrap_angle(self, angle):
