@@ -7,7 +7,7 @@
 #include <Adafruit_9DOF.h>
 
 //Timer Values
-#define FREQUENCY 10 //in Hz, e.g. 10 = 10 Hz = 0.1s
+#define FREQUENCY 1 //in Hz, e.g. 10 = 10 Hz = 0.1s
 bool timer1_flag = false;
 
 
@@ -38,7 +38,7 @@ bool gyro_connected = false;
 void setup(void)
 {
   Serial.begin(9600);
-  Serial.println(F("Ares Arduino")); Serial.println("");
+  Serial.println(F("Ares Arduino Sensor Interface")); Serial.println("");
   
   initPotentiometers();
   initIR();
@@ -83,7 +83,7 @@ void init_timer1(int frequency) {
   sei(); //enable interrupts
 }
 
-ISR(TIMER0_COMPA_vect) {
+ISR(TIMER1_COMPA_vect) {
    timer1_flag = true;
 }
 

@@ -19,7 +19,7 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 void setup(void)
 {
   Serial.begin(9600);
-  Serial.println(F("Ares Arduino Sensor Interface")); Serial.println("");
+  Serial.println(F("Ares Arduino Motor Interface")); Serial.println("");
   
   pwm.begin();
   pwm.setPWMFreq(60); //Sets frequency to send to servo. 
@@ -39,6 +39,8 @@ void loop(void)
 
     update_motors();    
   }
+//update_motors();
+//delay(10);
 }
 
 int limit_data(int minData, int maxData, int data) {
@@ -72,7 +74,7 @@ void init_timer1(int frequency) {
   sei(); //enable interrupts
 }
 
-ISR(TIMER0_COMPA_vect) {
+ISR(TIMER1_COMPA_vect) {
    timer1_flag = true;
 }
 
@@ -96,13 +98,20 @@ void update_motors() {
       Serial.print("; Value: "); Serial.println(value);
 
       uint8_t motor_num = label - '0';
-      if (motor_num >= 0 && motor_num <= 9) {
+      if (motor_num >= 0 && motor_num <= 1) {
         base_linear = value;
         converted_output = base_linear * MOTOR_SCALE + MOTOR_OFFSET;
         converted_data = limit_data(MOTOR_MIN, MOTOR_MAX, converted_output);
         pwm.setPWM(motor_num, 0, (int)converted_data);  
         Serial.print("X: "); 
         Serial.println(base_linear);
+      }
+      else if (motor_num >= 2 && motor_num <= 9) {
+        base_linear = value;
+        pwm.setPWM(motor_num, 0, (int)base_linear);  
+        Serial.print("X: "); 
+        Serial.println(base_linear);
+        Serial.println(converted_data);
       }
     }
     else{
