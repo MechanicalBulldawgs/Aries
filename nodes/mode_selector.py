@@ -16,7 +16,7 @@ class Mode_Selector(object):
         '''
         '''
         rospy.init_node("mode_selector")
-        self.mode_pub = rospy.Publisher("operation_mode", Int8)
+        self.mode_pub = rospy.Publisher("operation_mode", Int8, queue_size = 10)
 
         # Load modes
         self.modes_by_val = {}

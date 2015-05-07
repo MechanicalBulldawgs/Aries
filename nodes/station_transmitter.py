@@ -45,6 +45,9 @@ class Station_Transmitter(object):
                 self.modes_by_val[value] = name
         print("Loaded modes: " + str(self.modes_by_val))
 
+        # Load topic names
+        joystick_topic = rospy.get_param("topics/joystick", "joy")
+        op_mode_topic = rospy.get_param("topics/op_mode", "operation_mode")
         ################################################
         #######   Setup comms with robot   #############
         self.status_ret_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -58,8 +61,9 @@ class Station_Transmitter(object):
 
         ################################################
         #######    Subscribe to command topics   #######
-        rospy.Subscriber("joy", Joy, self.joy_callback)
-        rospy.Subscriber("operation_mode", Int8, self.mode_callback)
+        rospy.Subscriber(joystick_topic, Joy, self.joy_callback)
+
+        rospy.Subscriber(op_mode_topic, Int8, self.mode_callback)
 
     def run(self):
         '''

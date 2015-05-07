@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import socket, atexit, signal, rospy, cPickle
-import roslib; roslib.load_manifest("aries")
 
 from multiprocessing import Process, Value, Lock
 from sensor_msgs.msg import Joy
@@ -24,8 +23,6 @@ class Station_Receiver(object):
         Station Receiver constructor
         '''
         rospy.init_node("station_receiver")
-        self.mode_pub = rospy.Publisher("operation_mode", String)
-        self.joy_pub = rospy.Publisher("aries_joy", Joy)
         
         ################################################
         ####### Load parameters from param files #######
@@ -48,6 +45,12 @@ class Station_Receiver(object):
                 self.modes_by_val[value] = name
         print("Loaded modes: " + str(self.modes_by_val))
 
+        # Load topic names
+        op_mode_topic = rospy.get_param("topics/op_mode", "operation_mode")
+        joystick_topic = rospy.get_param("topics/joystick", "joy")
+
+        self.mode_pub = rospy.Publisher(op_mode_topic, String, queue_size = 10)
+        self.joy_pub = rospy.Publisher(joystick_topic, Joy, queue_size = 10)
         ################################################
         #######   Setup comms with robot   #############
         self.control_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # Receives control messages from station
@@ -56,7 +59,7 @@ class Station_Receiver(object):
         self.data_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.data_sock.bind(("", self.DATA_LINE_PORT))
 
-        ################################################
+        ##############################################################
         #######   Setup process to handle control line   #############
         self.shared_ctrl_mode = Value("i", 1)
         self.mode_lock = Lock()
@@ -85,7 +88,7 @@ class Station_Receiver(object):
     def run(self):
         '''
         '''
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(100)
         while not rospy.is_shutdown():
             # Wait to receive data over data line
             data, addr = self.data_sock.recvfrom(BUFFER_SIZE)

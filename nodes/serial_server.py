@@ -15,7 +15,7 @@ class serial_server(object):
 		
 		rospy.init_node('serial_server')
 		self.imu_pub = rospy.Publisher("imu", Imu, queue_size = 10)
-		self.hopper_status_pub = rospy.Publisher("hopper_status", Bool, queue_size = 10)
+		self.scoop_safety_pub = rospy.Publisher("scoop_safe", Bool, queue_size = 10)
 
 		"""Attempt to get parameters from the ROS server and use them to initialize the list 
 			of touch sensors and the connection to the Arduino"""
@@ -53,7 +53,7 @@ class serial_server(object):
 			rospy.logerr("Received some bad data from Arduino; Don't be alarmed. This happens. Trying again.")
 			return
 		#################################
-		hopper_status = None
+		scoop_ir_data = None
 		#################################
 		imu_sensors = {}
 		# Format: {GYRO: [X, Y, Z], ACCEL: [X, Y, Z], ORIENT: [Roll, Pitch, Yaw]....}
@@ -91,7 +91,7 @@ class serial_server(object):
 				##################################
 				# Parse IR Distance interrupter data
 				##################################
-				hopper_status = sensor_data
+				scoop_ir_data = sensor_data
 				good_dist_inter_data = True
 
 		#############################################
@@ -100,7 +100,7 @@ class serial_server(object):
 		if good_imu_data:
 			self.publish_imu(imu_sensors)
 		if good_dist_inter_data:
-			self.publish_hopper_status(hopper_status)
+			self.publish_hopper_status(scoop_ir_data)
 	
 	def publish_hopper_status(self, hopper_status):
 		'''
