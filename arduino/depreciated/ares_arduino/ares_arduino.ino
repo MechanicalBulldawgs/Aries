@@ -8,17 +8,17 @@
 #include <Adafruit_PWMServoDriver.h>
 #include <PID_v1.h>
 
-#define dt .025
-#define twaitIdeal 25
-#define tmath 21
+#define dt .15
+#define twaitIdeal 205
+#define tmath 202
 #define twaitms twaitIdeal - tmath
 
-#define accelXOffset -0.35
-#define accelYOffset 0.02
-#define accelZOffset 0.00
+#define accelXOffset -0.37
+#define accelYOffset 0.09
+#define accelZOffset 9.78
 
 #define gyroXOffset -0.01
-#define gyroYOffset 0.04
+#define gyroYOffset 0.03
 #define gyroZOffset 0.04
 
 /* Assign a unique ID to the sensors */
@@ -33,8 +33,8 @@ double RSetpoint, RInput, ROutput;
 double LSetpoint, LInput, LOutput;
 
 //Specify the links and initial tuning parameters
-PID Left_MotorPID(&LInput, &LOutput, &LSetpoint,2,5,1, DIRECT);
-PID Right_MotorPID(&RInput, &ROutput, &RSetpoint,2,5,1, DIRECT); 
+PID Left_MotorPID(&LInput, &LOutput, &LSetpoint,0.25,0,0, DIRECT);
+PID Right_MotorPID(&RInput, &ROutput, &RSetpoint,0.25,0,0, DIRECT); 
 //Constants for robot motor control velocity equations
 const float base_radius = .25;
 const float wheel_radius = .1016;
@@ -44,6 +44,9 @@ const int L_motor = 1;
 
 float base_linear = 0;
 float base_angular = 0;
+
+int ROut = 370;
+int LOut = 370;
 
 
 /**************************************************************************/
@@ -78,7 +81,7 @@ void initSensors()
 /**************************************************************************/
 void setup(void)
 {
-  Serial.begin(115200);
+  Serial.begin(9600);
   Serial.println(F("Ares Arduino")); Serial.println("");
   
   /* Initialise the sensors */
@@ -97,6 +100,10 @@ void setup(void)
   //turn the PID on
   Left_MotorPID.SetMode(AUTOMATIC);
   Right_MotorPID.SetMode(AUTOMATIC);
+  
+  
+  Left_MotorPID.SetOutputLimits(-255,255);
+  Right_MotorPID.SetOutputLimits(-225,255);
 }
 
 /**************************************************************************/
@@ -139,14 +146,18 @@ void loop(void)
   gyro_eventAvg.gyro.y = (gyro_eventAvg.gyro.y/10) - gyroYOffset;
   gyro_eventAvg.gyro.z = (gyro_eventAvg.gyro.z/10) - gyroZOffset;
   
-  //Serial.print("X: "); Serial.print(accel_eventAvg.acceleration.x); Serial.print("  ");
-  //Serial.print("Y: "); Serial.print(accel_eventAvg.acceleration.y); Serial.print("  ");
-  //Serial.print("Z: "); Serial.print(accel_eventAvg.acceleration.z); Serial.println("  ");
+//  Serial.print("X: "); Serial.print(accel_eventAvg.acceleration.x); Serial.print("  ");
+//  Serial.print("Y: "); Serial.print(accel_eventAvg.acceleration.y); Serial.print("  ");
+//  Serial.print("Z: "); Serial.print(accel_eventAvg.acceleration.z); Serial.println("  ");
+//  
+//  Serial.print("X: "); Serial.print(gyro_eventAvg.gyro.x); Serial.print("  ");
+//  Serial.print("Y: "); Serial.print(gyro_eventAvg.gyro.y); Serial.print("  ");
+//  Serial.print("Z: "); Serial.print(gyro_eventAvg.gyro.z); Serial.println("  ");
 
   xvel += (accel_event.acceleration.x) * dt;
   yvel += (accel_event.acceleration.y) * dt;
   
-  time2 = millis();                //this can be removed once we know how long one loop iteration takes
+
   //Serial.println(time2 - time1);   //this can be removed once we know how long one loop iteration takes
   
   //Serial.print("xvel: ");Serial.print(xvel);
@@ -161,64 +172,71 @@ void loop(void)
     
     delay(10);
     char label = Serial.read();
+    Serial.print("Label: "); Serial.print(label); 
     char separator = Serial.read();
+    Serial.print("; Separator: "); Serial.println(separator); 
     if(separator == ':'){
-      int value = Serial.parseInt();
+      float value = Serial.parseFloat();
+      Serial.print("; Value: "); Serial.println(value);
       switch(label) {
        case '0': 
-          pwm.setPWM(0,0,value);
+          pwm.setPWM(0,0,(int)value);
           break;   
        case '1': 
-          pwm.setPWM(1,0,value);
+          pwm.setPWM(1,0,(int)value);
           break;
        case '2': 
-          pwm.setPWM(2,0,value);
+          pwm.setPWM(2,0,400);
+          Serial.println("case 2");
           break;
        case '3': 
-          pwm.setPWM(3,0,value);
+          pwm.setPWM(3,0,(int)value);
           break;
        case '4': 
-          pwm.setPWM(4,0,value);
+          pwm.setPWM(4,0,(int)value);
           break;
        case '5': 
-          pwm.setPWM(5,0,value);
+          pwm.setPWM(5,0,(int)value);
           break;
        case '6': 
-          pwm.setPWM(6,0,value);
+          pwm.setPWM(6,0,(int)value);
           break;
        case '7': 
-          pwm.setPWM(7,0,value);
+          pwm.setPWM(7,0,(int)value);
           break; 
        case '8': 
-          pwm.setPWM(8,0,value);
+          pwm.setPWM(8,0,(int)value);
           break;
        case '9': 
-          pwm.setPWM(9,0,value);
+          pwm.setPWM(9,0,(int)value);
           break;
        case 'A': 
-          pwm.setPWM(10,0,value);
+          pwm.setPWM(10,0,(int)value);
           break;
        case 'B': 
-          pwm.setPWM(11,0,value);
+          pwm.setPWM(11,0,(int)value);
           break;
        case 'C': 
-          pwm.setPWM(12,0,value);
+          pwm.setPWM(12,0,(int)value);
           break;
        case 'D': 
-          pwm.setPWM(13,0,value);
+          pwm.setPWM(13,0,(int)value);
           break;
        case 'E': 
-          pwm.setPWM(14,0,value);
+          pwm.setPWM(14,0,(int)value);
           break;
        case 'F': 
-          pwm.setPWM(15,0,value);
+          pwm.setPWM(15,0,(int)value);
           break; 
        case 'X': 
           base_linear = value;
+          Serial.print("X: "); Serial.println(base_linear);
           break;
        case 'Z': 
           base_angular = value;
           break;
+       default: 
+         break;
          
        
       }
@@ -234,34 +252,64 @@ void loop(void)
   
   
   //Solve for Intended L/R Wheel Velocities Based of intended Angular/Linear Velocities.
-  LSetpoint = base_linear - base_angular*base_radius;  //This is the desired velocity of the left wheel.
-  RSetpoint = base_linear + base_angular*base_radius;  //This is the desired velocity of the right wheel. 
- 
+  float LSet = base_linear - base_angular*base_radius;  //This is the desired velocity of the left wheel.
+  float RSet = base_linear + base_angular*base_radius;  //This is the desired velocity of the right wheel. 
+  
+  //Converts L/R Set to values between 0 to 255.
+  LSetpoint = 639*(LSet) + 512;
+  RSetpoint = 639*(RSet) + 512; 
+  
+  Serial.print("LSet: "); Serial.println(LSetpoint);
+  Serial.print("RSet: "); Serial.println(RSetpoint);
+  
   //Compute Actual Velocities Based off of IMU Data
-  //float xvel = 0;    //xvel = IMU measured base linear velocity
+  //xvel = IMU measured base linear velocity
   float ang_vel = gyro_eventAvg.gyro.z; //ang_vel = IMU measured base angular velocity
+  Serial.print("xvel: ");    Serial.println(xvel);
+  Serial.print("ang_vel: "); Serial.println(ang_vel);
   
   //Solve for Measured L/R Wheel Velocities based off measured Angular/Linear Velcoities. 
-  LInput = xvel - ang_vel*base_radius;
-  RInput = xvel + ang_vel*base_radius;  
- 
+  float LIn = xvel - ang_vel*base_radius;
+  float RIn = xvel + ang_vel*base_radius;  
+  Serial.print("LIn: "); Serial.println(LIn);
+  Serial.print("RIn: "); Serial.println(RIn);
+  
+  LInput = 639*(LIn) + 512;
+  RInput = 639*(RIn) + 512; 
+  
+  Serial.print("LInput: "); Serial.println(LInput);
+  Serial.print("RInput: "); Serial.println(RInput);
+  
   //Compute function(Uses the PID controller) 
   Left_MotorPID.Compute();
   Right_MotorPID.Compute();
   
   //Convert All Velocities to Respective PWM Signal
     //This is based off motor characteristics, gearing, wheel sizes, etc.
+    Serial.print("ROutput: ");
+    Serial.println(ROutput);
+    Serial.print("LOutput: ");
+    Serial.println(LOutput);
     
-    //Equation relating wheel velcoity to PWM value
-    int R_PWM = (280*ROutput) + 375;
-    int L_PWM = (280*LOutput) + 375; 
-    
-  
+   
+    Serial.println(ROutput);
+    Serial.println(LOutput);    
+ 
+  ROut = (ROutput*.902) + 370;
+  LOut = (LOutput*.902) + 370;
+ Serial.print("Rout: "); Serial.println(ROut);
+ Serial.print("Lout: "); Serial.println(LOut);
+ 
     
   //Send the PWM Signal to each wheel
-  pwm.setPWM(R_motor,0,R_PWM);
-  pwm.setPWM(L_motor,0,L_PWM);
+  pwm.setPWM(R_motor,0,ROut);
+  pwm.setPWM(L_motor,0,LOut);
   
+  
+  Serial.println();
+  //delay(100);
+    time2 = millis();                //this can be removed once we know how long one loop iteration takes
+  Serial.print(time2 - time1);
   
   
 }
