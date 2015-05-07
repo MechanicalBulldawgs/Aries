@@ -16,7 +16,7 @@
     </node>
 
     <!-- Static transform from laser to base_link -->
-    <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0.5 0 0.5 0 0.785398163 0 base_link laser 100" />
+    <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0.5 0 0.5 1.57079632679 0.785398163 0 base_link laser 100" />
 
     <!-- For testing only. This will be dynamic later. -->
     <node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="0 0 0 0 0 0 map base_link 100" />
@@ -24,4 +24,6 @@
     <node type="laserscan_to_pointcloud" pkg="aries" name="laserscan_to_pointcloud" />
 
     <node type="filter_pointcloud.py" pkg="aries" name="filter_pointcloud" />
+
+    <node type="map_pointcloud.py" pkg="aries" name="map_pointcloud" />
 </launch>

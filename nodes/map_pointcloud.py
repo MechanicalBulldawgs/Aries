@@ -14,11 +14,14 @@ Version: 2/13/14
 import rospy
 from nav_msgs.msg import OccupancyGrid as OGmsg
 from nav_msgs.msg import MapMetaData
-from geometry_msgs.msg import Pose, Point, Quaternion, Point32
+from geometry_msgs.msg import Pose, Point, Quaternion
 from sensor_msgs.msg import PointCloud
 
+from tf import TransformListener
+
 import numpy as np
-from scipy import stats
+
+from aries.srv import occupancy_map, occupancy_mapRequest, occupancy_mapResponse
 
 class OccupancyGrid(object):
     '''
@@ -38,6 +41,17 @@ class OccupancyGrid(object):
         Each grid cell contains the probability of 
         '''
 
+        # Creates the ROS node.
+        rospy.init_node("map_pointcloud")
+
+        # Inits the pointcloud Subscriber
+        rospy.Subscriber("/aries/filtered_front_pointcloud", PointCloud, self.pointcloud_callback)
+
+        # Initialize service that gets the current angle of the lidar
+        self._service = rospy.Service("/aries/get_occupancy_map", occupancy_map, self.handle_get_occupancy_map)
+
+        self.tf = TransformListener()
+
         self.width = width 
         self.height = height
         self.resolution = resolution
@@ -53,7 +67,7 @@ class OccupancyGrid(object):
         Private helper function.  Uses width, height, and resolution variables to 
          construct and set self.grid 
         '''
-        self.grid = np.zeros((height / resolution + 1, width / resolution + 1))
+        self.grid = np.zeros((height / resolution, width / resolution))
         self.grid.fill(-1)
 
     def _loc_to_indices(self, loc):
@@ -61,13 +75,13 @@ class OccupancyGrid(object):
         Transforms global location coordinates (given in meters as x, y position tuple) to grid indices
         '''
         x = int(loc[0] / self.resolution)
-        print(x)
+        # print(x)
         if loc[0] / self.resolution - x >= 0.5: x += 1
-        print(x)
+        # print(x)
         y = int(loc[1] / self.resolution)
-        print(y)
+        # print(y)
         if loc[1] / self.resolution - y >= 0.5: y += 1
-        print(y)
+        # print(y)
         return (x, y)
 
     def set_cell(self, loc, value):
@@ -87,7 +101,7 @@ class OccupancyGrid(object):
         i = self._loc_to_indices(loc)
         return self.grid[i[1]][i[0]]
 
-    def to_message(self):
+    def handle_get_occupancy_map(self, req):
         """ Return a nav_msgs/OccupancyGrid representation of this map. """
      
         grid_msg = OGmsg()
@@ -98,8 +112,8 @@ class OccupancyGrid(object):
 
         # .info is a nav_msgs/MapMetaData message. 
         grid_msg.info.resolution = self.resolution
-        grid_msg.info.width = self.width
-        grid_msg.info.height = self.height
+        grid_msg.info.width = self.width // self.resolution + 1
+        grid_msg.info.height = self.height // self.resolution + 1
         
         # Rotated maps are not supported... quaternion represents no
         # rotation. 
@@ -111,11 +125,38 @@ class OccupancyGrid(object):
         # range 0-1. This code will need to be modified if the grid
         # entries are given a different interpretation (like
         # log-odds).
-        flat_grid = self.grid.reshape((self.grid.size,)) * 100
-        grid_msg.data = list(np.round(flat_grid))
-        return grid_msg
+        flat_grid = self.grid.reshape(self.grid.size) * 100
+        grid_msg.data = [int(x) for x in np.round(flat_grid).tolist()]
+        print grid_msg.data
+        return occupancy_mapResponse(grid_msg)
+
+    def pointcloud_callback(self, cloud):
+
+        # Transforms the point cloud into the /map frame for mapping
+        self.tf.waitForTransform("/laser", "/map", rospy.Time(0), rospy.Duration(4.0))
+        cloud = self.tf.transformPointCloud("/map", cloud)
+
+        for point in cloud.points:
+            if (0 < point.x < self.width and 0 < point.y < self.height):
+                self.set_cell((point.x, point.y), min(abs(point.z), 1.0))
+
+
+    def run(self):
+        # Runs while shut down message is not recieved.
+        rate = rospy.Rate(10)
+        # Due to differences in startup time, the node needs to wait or it will raise errors
+        # by calling for tf transforms at times before startup of the tf broadcaster.
+        rospy.sleep(5)
+        
+        # Waits until a transform is available
+        self.tf.waitForTransform("/laser", "/map", rospy.Time(0), rospy.Duration(4.0))
+        
+        # Main message processing loop
+        while not rospy.is_shutdown():
+            rate.sleep()
 
 
 
 if __name__ == '__main__':
-    pass
+    mpc = OccupancyGrid(width=20, height=20, resolution=0.1)
+    mpc.run()

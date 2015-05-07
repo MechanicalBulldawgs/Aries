@@ -62,6 +62,7 @@ find_package(catkin REQUIRED COMPONENTS
  add_service_files(
    FILES
    LidarPivotAngle.srv
+   occupancy_map.srv
 #   Service2.srv
  )
 
@@ -76,6 +77,7 @@ find_package(catkin REQUIRED COMPONENTS
  generate_messages(
    DEPENDENCIES
    std_msgs
+   nav_msgs
  )
 
 ###################################
