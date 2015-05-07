@@ -26,25 +26,33 @@ class hopp_coll_states(object):
         self.COLLECTOR_REST_MAX = 255
         self.COLLECTOR_DUMP_MIN = 295
 
+        #Initializes the node
         rospy.init_node('hopp_coll_state')
+
+        #Sets up publisher to publish states onto a topics
         self.hopper_state_pub = rospy.Publisher("hopper_state", String, queue_size = 10)
         self.collector_state_pub = rospy.Publisher("collector_state", String, queue_size = 10)
 
+        # Initializes the hopper/collector angles to be considered in rest postion. This prevents log errors since the arduino 
+        # does not immediatly send the angles. 
         self.hopper_angle = 80
-        self.collector_angle = 80
+        self.collector_angle = 250
 
+        #Sets up subsribers to get the angles of the collector/hopper
         rospy.Subscriber("pot_hopper", UInt16, self.hopper_callback)
         rospy.Subscriber("pot_collector", UInt16, self.collector_callback)
 
         
 
-
+    #Sets the data from the hopper_callback to data member
     def hopper_callback(self, data):
         self.hopper_angle = data.data
 
+    #Sets the data from the hopper_callback to data member
     def collector_callback(self, data):
         self.collector_angle = data.data
 
+    #Checks the hopper's current angle and determines what state it is in.
     def check_hopper(self):
         if self.HOPPER_MIN <= self.hopper_angle <= self.HOPPER_REST_MAX: 
             state = "Resting"
@@ -59,11 +67,13 @@ class hopp_coll_states(object):
 
         return state
 
+    #Publishes the hopper state to it's respective topic
     def publish_hopper_state(self, hopper_state):
         state_msg = String()
         state_msg.data = hopper_state
         self.hopper_state_pub.publish(state_msg)
 
+    #Checks the collector's current angle and determines what state it is in.
     def check_collector(self):
         if self.COLLECTOR_MIN <= self.collector_angle <=self.COLLECTOR_REST_MAX: 
             state = "Resting"
@@ -78,12 +88,14 @@ class hopp_coll_states(object):
 
         return state
 
+    #Publishes the collector state to it's respective topic    
     def publish_collector_state(self, collector_state):
         state_msg = String()
         state_msg.data = collector_state
         self.collector_state_pub.publish(state_msg)
 
 
+    #Main Fnction. 
     def run(self):
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
