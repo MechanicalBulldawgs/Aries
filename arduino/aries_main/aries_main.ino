@@ -29,7 +29,7 @@ int pot2_angle;
 
 //IR Values
 #define IR_PIN 6
-bool ir_triggered = false
+bool ir_triggered = false;
 
 #define MIN_ANGLE 55  //hopper shouldn't return past this point; send stop message
 #define MAX_ANGLE 165 // hopper should stop here; send stop message
@@ -38,6 +38,7 @@ bool ir_triggered = false
 Adafruit_9DOF dof = Adafruit_9DOF();
 Adafruit_LSM303_Accel_Unified accel = Adafruit_LSM303_Accel_Unified(30301);
 Adafruit_L3GD20_Unified gyro = Adafruit_L3GD20_Unified(20);
+Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 bool accel_connected = false;
 bool gyro_connected = false;
 
@@ -49,7 +50,7 @@ void setup(void)
   
   pwm.begin();
   pwm.setPWMFreq(60); //Sets frequency to send to servo. 
-  initPotentiometers()
+  initPotentiometers();
   initIR();
   init_timer1(FREQUENCY);
 
@@ -69,17 +70,18 @@ void loop(void)
     readPotentiometers();
     readIR();
     printData();
+    
   }
 }
 
-void limit_data(int min, int max, int data) {
+int limit_data(int minData, int maxData, int data) {
   /**
   * Returns data, capped at the maximum and miminum values
   */
-  if (data > max) {
-    return max;
-  } else if (data < min){
-    return min;
+  if (data > maxData) {
+    return maxData;
+  } else if (data < minData){
+    return minData;
   }
   return data;
 }
@@ -148,7 +150,7 @@ void readIR() {
   /**
   * Sets ir_triggered to 1 if the digital pin goes low, otherwise sets it to 0
   */
-  ir_triggered = (digitalRead(IR_DIST_INTER) == LOW)? 1:0;
+  ir_triggered = (digitalRead(IR_PIN) == LOW)? 1:0;
 }
 
 void printData() {
@@ -183,7 +185,7 @@ void printData() {
 
   Serial.print("{\"data\": {");
   if (accel_connected || gyro_connected) {
-    Serial.print{"\"imu\": {"}
+    Serial.print("\"imu\": {");
   }
   if (accel_connected) {
     accel.getEvent(&event);
@@ -232,6 +234,8 @@ void update_motors() {
   * then converts the command to PWM values and publishes it to the motors.
   * If the command cannot be parsed, flushes the buffer.
   */
+  int converted_data;
+  
   if (Serial.available()) {
     char label = Serial.read();
     Serial.print("Label: "); Serial.print(label); 
@@ -246,7 +250,7 @@ void update_motors() {
         base_linear = value;
         converted_output = base_linear * MOTOR_SCALE + MOTOR_OFFSET;
         converted_data = limit_data(MOTOR_MIN, MOTOR_MAX, converted_output);
-        pwm.setPWM(motor_num, 0, (int)LOut);  
+        pwm.setPWM(motor_num, 0, (int)converted_data);  
         Serial.print("X: "); 
         Serial.println(base_linear);
       }
