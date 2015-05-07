@@ -2,7 +2,7 @@
 
 """This node interfaces with an Arduino to read sensor data """
 
-import rospy, tf, serial, atexit
+import rospy, tf, serial, atexit, json
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion
 from std_msgs.msg import Bool
@@ -13,12 +13,16 @@ class serial_server(object):
     """This class publishes sensor data received from an attached Arduino.
         Sensor data is published in the run() function"""
     def __init__(self):
+        self.accel_data = {"x":0, "y":0, "z":0, "pitch":0, "roll":0}
+        self.gyro_data = {"x":0, "y":0, "z":0}
+        self.pot_data = {"pot1":0, "pot2":0}
+        self.ir_data = 0
         
         rospy.init_node('serial_server')
         self.imu_pub = rospy.Publisher("imu", Imu, queue_size = 10)
         self.scoop_safety_pub = rospy.Publisher("scoop_safe", Bool, queue_size = 10)
-        self.pot_hopper_pub = rospy.Publisher("pot_hopper", UInt16, queue_size = 10) 
-        self.pot_collector_pub = rospy.Publisher("pot_collector", UInt16, queue_size = 10)
+        self.collector_pub = rospy.Publisher("collector_pot", UInt16, queue_size = 10)
+        self.hopper_pub = rospy.Publisher("hopper_pot", UInt16, queue_size = 10)
 
         """Attempt to get parameters from the ROS server and use them to initialize the list 
         of touch sensors and the connection to the Arduino"""
@@ -38,194 +42,56 @@ class serial_server(object):
             if not self.arduino.inWaiting() > 0:
                 rate.sleep()
                 continue
-
-            self.handle_data(self.arduino.readline())
             
-
-    def handle_data(self, data):
-        '''
-        This function parses data received from the arduino board.
-        data is the raw string data packet received from the board.
-        data should be in the format: "@IMU &ORIENT$R:VALUE,P:VALUE,Y:VALUE&ACCEL$X:VALUE,Y:VALUE,Z:VALUE&GYRO$X:VALUE,Y:VALUE,Z:VALUE@SENSOR1 ..."
-        '''
-        good_imu_data = False
-        good_dist_inter_data = False
-        good_pot_hopper_data = False
-        good_pot_collector_data = False
+            self.parse_data(self.arduino.readline())
+            
+    def parse_data(self, data):
         try:
-            data = (data.replace("\n", "")).split("@")[1:]  # Split on '@' to separate sensor information from arduino
+            json_str = json.loads(data)["data"]
         except:
-            rospy.logerr("Received some bad data from Arduino; Don't be alarmed. This happens. Trying again.")
             return
-        #################################
-        scoop_ir_data = None
-        #################################
-        imu_sensors = {}
-        # Format: {GYRO: [X, Y, Z], ACCEL: [X, Y, Z], ORIENT: [Roll, Pitch, Yaw]....}
-        #################################
+        if "imu" in json_str.keys():
+            if "accel" in json_str["imu"].keys():
+                self.accel_data = json_str["imu"]["accel"]
+            if "gyro" in json_str["imu"].keys():
+                self.gyro_data = json_str["imu"]["gyro"]
+            self.publish_imu()
+        if "potentiometers" in json_str.keys():
+            self.pot_data = json_str["potentiometers"]
+            self.publish_potentiometers()
+        if "ir" in json_str.keys():
+            self.ir_data = json_str["ir"]
+            self.publish_ir
 
-        # Loop through each sensor type's data from arduino
-        for item in data:
-            try:
-                sensor_name = (item.split(" "))[0] # Grab the sensor name
-                sensor_data = (item.split(" "))[1] # Grab the sensor data
-            except:
-                rospy.logerr("Caught packet at a bad time -- Can't parse.")
-                continue
-            if sensor_name == "IMU":
-                ##################################
-                # Parse IMU data
-                ##################################
-                try:
-                    sensor_data = (sensor_data.split("&"))[1:]
-                    # parse each individual sensor on IMU
-                    for imu_sensor in sensor_data:
-                        sensor_data = imu_sensor.split("$")
-                        sensor_name = sensor_data[0]
-                        sensor_data = sensor_data[1].split(",")
-                        imu_sensors[sensor_name] = []
-                        for val in sensor_data:
-                            val = float(val.split(":")[1])
-                            imu_sensors[sensor_name].append(val)
-                except:
-                    rospy.logerr("Could not parse IMU sensor data from Arduino")
-                    continue
-                else:
-                    good_imu_data = True
-            elif sensor_name == "IR_INTER":
-                ##################################
-                # Parse IR Distance interrupter data
-                ##################################
-                scoop_ir_data = sensor_data
-                good_dist_inter_data = True
-
-            elif sensor_name == "POT_HOPPER":
-                ##################################
-                # Parse Pot Angle data
-                ##################################
-                pot_hopper_position = sensor_data
-                good_pot_hopper_data = True
-
-            elif sensor_name == "POT_COLLECTOR":
-                ##################################
-                # Parse Pot Angle data
-                ##################################
-                pot_collector_position = sensor_data
-                good_pot_collector_data = True
-
-
-
-        #############################################
-        # Publish data (but only if our data is all good)
-        #############################################
-        if good_imu_data:
-            self.publish_imu(imu_sensors)
-
-        if good_dist_inter_data:
-            self.publish_scoop_status(scoop_ir_data)
-
-        if good_pot_hopper_data:
-            self.publish_pot_hopper_position(pot_hopper_position)
-
-        if good_pot_collector_data:
-            self.publish_pot_collector_position(pot_collector_position)
-
-    def publish_pot_hopper_position(self, position):
-        '''
-            Given position publish ROS message over pot_hopper topic.
-        '''
-        good_data = True
-        position_msg = UInt16()
-
-        try:
-            position = int(position)
-            position_msg.data = position
-        except:
-            good_data = False
-            rospy.logerr("Cannot publish badly formatted pot data (Hopper Position).  Will try again next go around.")
-        if good_data:
-           self.pot_hopper_pub.publish(position_msg)
-
-    def publish_pot_collector_position(self, position):
-        '''
-            Given position publish ROS message over pot_hopper topic.
-        '''
-        good_data = True
-        position_msg = UInt16()
-
-        try:
-            position = int(position)
-            position_msg.data = position
-        except:
-            good_data = False
-            rospy.logerr("Cannot publish badly formatted pot data (Collector Position).  Will try again next go around.")
-        if good_data:
-           self.pot_collector_pub.publish(position_msg)
-
-    def publish_scoop_status(self, scoop_status):
-        '''
-            Given hopper_status ("0" or "1"), publish ROS message over hopper_status topic.
-        ''' 
-        scoop_status = scoop_status.strip()
-        good_stuff = True
-        # Construct message
-        status_msg = Bool()
-        # Check given hopper status
-        
-        if scoop_status == "0":
-            status_msg.data = False
-        elif scoop_status == "1":
-            status_msg.data = True 
-        else:
-            good_stuff = False
-            rospy.logerr("Cannot publish badly formatted scoop status data (IR Distance Interrupter).  Will try again next go around.")
-        # If all good, publish message
-        if good_stuff:
-            self.scoop_safety_pub.publish(status_msg)
-    
-    def publish_imu(self, imu_data):
-        """given imu data from teensy, publish as ROS message
-            Expects imu_data in the format: {"SENSOR_NAME": [SENSOR VALUE, SENSOR_VALUE, SENSOR_VALUE], "SENSOR_NAME": [SENSOR_VALUE,...], ...}
-
-        """
-        good_imu = True
-        # Set up messages
+    def publish_imu(self):
         imu_msg = Imu()
-
-        now_time = rospy.Time.now()
-        imu_msg.header.stamp = now_time
+        imu_msg.header.stamp = rospy.Time.now()
         imu_msg.header.frame_id = 'base_link'
+        #Orientation from Accelerometer
+        roll = self.accel_data["roll"]
+        pitch = self.accel_data["pitch"]
+        yaw = 0
+        q = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
+        imu_msg.orientation = Quaternion(*q)
+        #Angular Velocity from Gyroscope
+        imu_msg.angular_velocity.x = self.gyro_data["x"]
+        imu_msg.angular_velocity.y = self.gyro_data["y"]
+        imu_msg.angular_velocity.z = self.gyro_data["z"]
+        #Linear Acceleration from Accelerometer
+        imu_msg.linear_acceleration.x = self.accel_data["x"]  
+        imu_msg.linear_acceleration.y = self.accel_data["y"]  
+        imu_msg.linear_acceleration.z = self.accel_data["z"]   
+        self.imu_pub.publish(imu_msg)
 
-        for key in imu_data.keys():
-            if key == "ORIENT":
-                try:
-                    roll = imu_data[key][0]
-                    pitch = imu_data[key][1]
-                    yaw = imu_data[key][2]
-                except:
-                    good_imu = False
-                    rospy.logerr("Cannot publish badly formatted imu_data (ORIENTATION).  Will try again next go around.")
-                q = tf.transformations.quaternion_from_euler(roll, pitch, yaw)
-                imu_msg.orientation = Quaternion(*q)
-            elif key == "GYRO":
-                try:
-                    imu_msg.angular_velocity.x = imu_data[key][0] 
-                    imu_msg.angular_velocity.y = imu_data[key][1]
-                    imu_msg.angular_velocity.z = imu_data[key][2] 
-                except:
-                    good_imu = False
-                    rospy.logerr("Cannot publish badly formatted imu_data (GYRO).  Will try again next go around.")
-            elif key == "ACCEL":
-                try:
-                    imu_msg.linear_acceleration.x = imu_data[key][0]  
-                    imu_msg.linear_acceleration.y = imu_data[key][1]
-                    imu_msg.linear_acceleration.z = imu_data[key][2] 
-                except:
-                    good_imu = False
-                    rospy.logerr("Cannot publish badly formatted imu_data (ACCEL).  Will try again next go around.")
-        if good_imu:
-            self.imu_pub.publish(imu_msg)
+    def publish_potentiometers(self):
+        collector_msg = UInt16(self.pot_data["pot1"])
+        hopper_msg = UInt16(self.pot_data["pot2"])
+        self.collector_pub.publish(collector_msg)
+        self.hopper_pub.publish(hopper_msg)
 
+    def publish_ir(self):
+        status_msg = Bool(bool(self.ir_data))
+        self.scoop_safety_pub.publish(status_msg)
 
     def _cleanup(self):
         """Called at exit to close connection to Arduino"""
