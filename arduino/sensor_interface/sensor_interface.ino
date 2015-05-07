@@ -1,6 +1,5 @@
 #include <Wire.h>
 #include <math.h>
-#include <Adafruit_PWMServoDriver.h>
 
 #include <Adafruit_Sensor.h>
 #include <Adafruit_L3GD20_U.h>
@@ -11,12 +10,6 @@
 #define FREQUENCY 10 //in Hz, e.g. 10 = 10 Hz = 0.1s
 bool timer1_flag = false;
 
-//Motor Values
-#define MOTOR_SCALE 0.902
-#define MOTOR_OFFSET 370.0
-#define MOTOR_MAX 600.0
-#define MOTOR_MIN 150.0
-float base_linear, base_angular, converted_output;
 
 //Potentiometer Values
 #define POT1_PIN A2
@@ -38,7 +31,6 @@ bool ir_triggered = false;
 Adafruit_9DOF dof = Adafruit_9DOF();
 Adafruit_LSM303_Accel_Unified accel = Adafruit_LSM303_Accel_Unified(30301);
 Adafruit_L3GD20_Unified gyro = Adafruit_L3GD20_Unified(20);
-Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver();
 bool accel_connected = false;
 bool gyro_connected = false;
 
@@ -48,8 +40,6 @@ void setup(void)
   Serial.begin(9600);
   Serial.println(F("Ares Arduino")); Serial.println("");
   
-  pwm.begin();
-  pwm.setPWMFreq(60); //Sets frequency to send to servo. 
   initPotentiometers();
   initIR();
   init_timer1(FREQUENCY);
@@ -66,7 +56,6 @@ void loop(void)
   if (timer1_flag) {
     timer1_flag = false;
 
-    update_motors();
     readPotentiometers();
     readIR();
     printData();
@@ -74,17 +63,6 @@ void loop(void)
   }
 }
 
-int limit_data(int minData, int maxData, int data) {
-  /**
-  * Returns data, capped at the maximum and miminum values
-  */
-  if (data > maxData) {
-    return maxData;
-  } else if (data < minData){
-    return minData;
-  }
-  return data;
-}
 
 void init_timer1(int frequency) {
   /**
@@ -226,37 +204,4 @@ void printData() {
   Serial.print("}, \"ir\":");
   Serial.print(ir_triggered);
   Serial.print("}}\n");
-}
-
-void update_motors() {
-  /**
-  * Checks if a new motor command is available. If so, attempts to parse the command 
-  * then converts the command to PWM values and publishes it to the motors.
-  * If the command cannot be parsed, flushes the buffer.
-  */
-  int converted_data;
-  
-  if (Serial.available()) {
-    char label = Serial.read();
-    Serial.print("Label: "); Serial.print(label); 
-    char separator = Serial.read();
-    Serial.print("; Separator: "); Serial.println(separator); 
-    if(separator == ':'){
-      float value = Serial.parseFloat();
-      Serial.print("; Value: "); Serial.println(value);
-
-      uint8_t motor_num = label - '0';
-      if (motor_num >= 0 && motor_num <= 9) {
-        base_linear = value;
-        converted_output = base_linear * MOTOR_SCALE + MOTOR_OFFSET;
-        converted_data = limit_data(MOTOR_MIN, MOTOR_MAX, converted_output);
-        pwm.setPWM(motor_num, 0, (int)converted_data);  
-        Serial.print("X: "); 
-        Serial.println(base_linear);
-      }
-    }
-    else{
-     Serial.flush(); 
-    } 
-  }
 }
