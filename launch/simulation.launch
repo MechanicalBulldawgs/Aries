@@ -1,6 +1,7 @@
 <launch>
 
-	<rosparam command="load" file="$(find aries)/param/simulation_params.yaml" />
+	<rosparam command="load" file="$(find aries)/param/localization.yaml" />
+    <rosparam command="load" file="$(find aries)/param/topics.yaml" />
 
 	<node pkg="stage_ros" type="stageros" name="stageros" args="$(find aries)/worlds/mining_field.world" respawn="false" output="screen" />
 	
