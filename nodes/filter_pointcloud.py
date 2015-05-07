@@ -36,6 +36,7 @@ class Filter_PointCloud(object):
         self.current_cloud = PointCloud() # current cloud message
         self.received_cloud = False      # True if we've received a new cloud, false if not
 
+        # Creates publisher for filtered point cloud topic
         self._cloud_pub = rospy.Publisher('/aries/filtered_front_pointcloud', PointCloud, queue_size=10)
 
 
@@ -51,39 +52,48 @@ class Filter_PointCloud(object):
     def process_cloud(self, cloud):
         self.received_cloud = False
 
+        # Extracts coordinates into numpy arrays
         y = np.array([v.x for v in cloud.points])
         x = np.array([v.y for v in cloud.points])
 
-        # Set the standard deviation
+        # Set number of standard deviations to allow coordinates to vary within
         nStd = 4
 
         N = len(x)
         stop = False
 
-        outlierX = np.array([])
-        outlierY = np.array([])
-
+        # Containers for discarded points
+        #outlierX = np.array([])
+        #outlierY = np.array([])
+        
+        # Iteratively removes outliers and fine tunes the regression line.
         while not stop and N > 0:
-            # Do linear regression
+            # Performs linear regression
             slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
 
             # print 'r value', r_value
             # print 'p_value', p_value
             # print 'standard deviation', std_err
 
-            # Generate new data
+            # Generates best-fit line
             yLinear = slope*x + intercept
 
-            # Calculate errors
+            # Calculate errors of the points
             errors = y - yLinear
 
+            # Determines standard deviation of the errors
             sigErr = np.std(errors)
 
-            # Look for outliers
+            # Converts errors into multiples of standard deviations
             magError = (np.absolute(errors)/sigErr)
+            
+            # Finds the largest outlier and its index
             val = np.amax(magError)
             ind = np.argmax(magError)
+            
+            # Checks if the largest outlier is outside of the specified bounds
             if(val > nStd):
+                # Removes the outlier point
                 N -= 1
                 #outlierX = np.append(outlierX, x[ind])
                 #outlierY = np.append(outlierY, y[ind])
@@ -91,19 +101,25 @@ class Filter_PointCloud(object):
                 y = np.delete(y, ind)
                 # print str(val) + " " + str(nStd)
             else:
+                # All remaining points lie within boundaries, exit the loop
                 stop = True
 
+        # Updates the cloud message with the new coordinates, minus the outliers/noise
         cloud.points = [Point32(x=outY, y=outX, z=0) for outX, outY in zip(x, y)]
 
+        # Transforms the point cloud into the /map frame for mapping
         self.tf.waitForTransform("/laser", "/map", rospy.Time(0), rospy.Duration(4.0))
         cloud = self.tf.transformPointCloud("/map", cloud)
 
+        # Only points with potential obstacles need to be mapped.
+        # This removes points from the point cloud within safe z-height ranges
         newPoints = []
         for i, point in enumerate(cloud.points):
             if (abs(point.z) >= 0.1):
                 newPoints.append(cloud.points[i])
         cloud.points = newPoints
         
+        # Publishes the new cloud of mapping points
         self._cloud_pub.publish(cloud)
 
     def run(self):
@@ -111,8 +127,14 @@ class Filter_PointCloud(object):
         Main work loop.
         '''
         rate = rospy.Rate(10)
+        # Due to differences in startup time, the node needs to wait or it will raise errors
+        # by calling for tf transforms at times before startup of the tf broadcaster.
         rospy.sleep(5)
+        
+        # Waits until a transform is available
         self.tf.waitForTransform("/laser", "/map", rospy.Time(0), rospy.Duration(4.0))
+        
+        # Main message processing loop
         while not rospy.is_shutdown():
             if self.received_cloud:
                 self.process_cloud(self.current_cloud)
