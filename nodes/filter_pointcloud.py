@@ -8,7 +8,6 @@ from sensor_msgs.msg import PointCloud
 from tf import TransformListener
 
 import numpy as np
-from scipy import stats
 
 
 class Filter_PointCloud(object):
@@ -55,6 +54,7 @@ class Filter_PointCloud(object):
         # Extracts coordinates into numpy arrays
         y = np.array([v.x for v in cloud.points])
         x = np.array([v.y for v in cloud.points])
+        A = np.vstack([x, np.ones(len(x))]).T
 
         # Set number of standard deviations to allow coordinates to vary within
         nStd = 4
@@ -69,11 +69,7 @@ class Filter_PointCloud(object):
         # Iteratively removes outliers and fine tunes the regression line.
         while not stop and N > 0:
             # Performs linear regression
-            slope, intercept, r_value, p_value, std_err = stats.linregress(x,y)
-
-            # print 'r value', r_value
-            # print 'p_value', p_value
-            # print 'standard deviation', std_err
+            slope, intercept = np.linalg.lstsq(A, y)[0]
 
             # Generates best-fit line
             yLinear = slope*x + intercept
