@@ -27,7 +27,7 @@ class serial_server(object):
         """Attempt to get parameters from the ROS server and use them to initialize the list 
         of touch sensors and the connection to the Arduino"""
 
-        port = rospy.get_param('ports/arduino', '/dev/ttyUSB1')#ACM0')
+        port = rospy.get_param('ports/arduino', '/dev/ttyUSB0')#ACM0')
         print("Connecting to Arduino on port: " + str(port))
         self.arduino = serial.Serial(port, 9600, timeout = 1)
         print("Connected to Arduino on port: " + str(port))
@@ -84,8 +84,8 @@ class serial_server(object):
         self.imu_pub.publish(imu_msg)
 
     def publish_potentiometers(self):
-        collector_msg = UInt16(self.pot_data["pot1"])
-        hopper_msg = UInt16(self.pot_data["pot2"])
+        collector_msg = UInt16(self.pot_data["pot_hopper"])
+        hopper_msg = UInt16(self.pot_data["pot_collector"])
         self.collector_pub.publish(collector_msg)
         self.hopper_pub.publish(hopper_msg)
 

@@ -12,13 +12,13 @@ bool timer1_flag = false;
 
 
 //Potentiometer Values
-#define POT1_PIN A2
-#define POT2_PIN A3
+#define POT_HOPPER_PIN A2
+#define POT_COLLECTOR_PIN A3
 #define ADC_REF 5 //reference voltage of ADC (V)
 #define GROVE_VCC 5 //VCC of the grove interface (V)
 #define FULL_ANGLE 300 //full value of the rotary angle (degrees)
-int pot1_angle;
-int pot2_angle;
+int pot_hopper_angle;
+int pot_collector_angle;
 
 //IR Values
 #define IR_PIN 6
@@ -100,8 +100,8 @@ void initPotentiometers() {
   /**
   * Set pins for potentiometers to inputs
   */
-  pinMode(POT1_PIN, INPUT);
-  pinMode(POT2_PIN, INPUT);
+  pinMode(POT_HOPPER_PIN, INPUT);
+  pinMode(POT_COLLECTOR_PIN, INPUT);
 }
 
 void initIR() {
@@ -116,12 +116,12 @@ void readPotentiometers() {
   * Get value from potentiometers and convert to angles, then save the values to
   * pot1_angle and pot2_angle
   */
-  int val1 = analogRead(POT1_PIN);
-  int val2 = analogRead(POT2_PIN);
+  int val1 = analogRead(POT_HOPPER_PIN);
+  int val2 = analogRead(POT_COLLECTOR_PIN);
   float voltage1 = (float)val1*ADC_REF/1023;
   float voltage2 = (float)val2*ADC_REF/1023;
-  pot1_angle = (voltage1*FULL_ANGLE)/GROVE_VCC;
-  pot2_angle = (voltage2*FULL_ANGLE)/GROVE_VCC;
+  pot_hopper_angle = (voltage1*FULL_ANGLE)/GROVE_VCC;
+  pot_collector_angle = (voltage2*FULL_ANGLE)/GROVE_VCC;
 }
 
 void readIR() {
@@ -197,10 +197,10 @@ void printData() {
   if (accel_connected || gyro_connected) {
     Serial.print("},");
   }
-  Serial.print("\"potentiometers\": {\"pot1\":");
-  Serial.print(pot1_angle);
-  Serial.print(", \"pot2\":");
-  Serial.print(pot2_angle);
+  Serial.print("\"potentiometers\": {\"pot_hopper\":");
+  Serial.print(pot_hopper_angle);
+  Serial.print(", \"pot_collector\":");
+  Serial.print(pot_collector_angle);
   Serial.print("}, \"ir\":");
   Serial.print(ir_triggered);
   Serial.print("}}\n");

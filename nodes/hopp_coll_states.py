@@ -4,6 +4,7 @@ import rospy
 from std_msgs.msg import Bool
 from std_msgs.msg import UInt16
 from std_msgs.msg import String 
+from std_msgs.msg import Int16
 
 
 class hopp_coll_states(object):
@@ -11,9 +12,6 @@ class hopp_coll_states(object):
 
     def __init__(self):
 
-	#IR Interrupt Distance Constants
-	self.SAFE_DIST_MAX = 10 #CHANGE THIS VALUE
-	self.SAFE_DIST_MIN = 12 #CHANGE THIS VALUE
 
         #Hopper Angle Constansts
         self.HOPPER_MAX = 180
@@ -37,16 +35,12 @@ class hopp_coll_states(object):
         self.collector_state_pub = rospy.Publisher("collector_state", String, queue_size = 10)
 	self.scoop_safe_state_pub = rospy.Publisher("scoop_safe_state", String, queue_size = 10)
 
-	#Also set up publisher to publish to command topics for collect and dump
-	self.hopper_cmds_pub = rospy.Publisher("hopper_cmds", Int16, queue_size = 10)
-	self.collector_spin_cmds_pub = rospy.Publisher("collector_spin_cmds", Int16, queue_size = 10)
-	self.collector_tilt_cmds_pub = rospy.Publisher("collecter_tilt_cmds", Int16, queue_size = 10)
-
         # Initializes the hopper/collector angles to be considered in rest postion. This prevents log errors since the arduino 
         # does not immediatly send the angles. 
         self.hopper_angle = 80
         self.collector_angle = 250
-	self.scoop_safe_dist = 10   #CHANGE THIS VALUE
+	self.scoop_safe_bool = 1
+
 
         #Sets up subsribers to get the angles of the collector/hopper
         rospy.Subscriber("hopper_pot", UInt16, self.hopper_callback)
@@ -64,16 +58,14 @@ class hopp_coll_states(object):
         self.collector_angle = angle.data
 
     #Sets the data from the IR distance interrupt to data member
-    def scoop_safe_callback(self, dist):
-	self.scoop_safe_dist = dist.data
+    def scoop_safe_callback(self, info):
+	self.scoop_safe_bool = info.data
 
     #Checks the hopper's current angle and determines what state it is in and tell hopper what to do.
     def check_hopper(self):
         if self.HOPPER_MIN <= self.hopper_angle <= self.HOPPER_REST_MAX: 
-	    hopper_cmd = 355 #ADJUST THIS VALUE; should tilt hopper up
             state = "Resting"
         elif self.HOPPER_REST_MAX < self.hopper_angle <= self.HOPPER_DUMP_MIN:
-	    hopper_cmd
             state = "Transitioning"
         elif self.HOPPER_DUMP_MIN < self.hopper_angle <= self.HOPPER_MAX:
             state = "Dumping"
@@ -113,10 +105,9 @@ class hopp_coll_states(object):
 
     #Check IR Interrupt distance to see whether we can drive
     def check_scoop_safe(self):
-	if self.SAFE_DIST_MIN <= self.scoop_safe_dist <= self.SAFE_DIST_MAX:
+	if self.scoop_safe_bool == 1:
 	    state = "Safe"
 	else:
-	    print self.scoop_safe_dist
 	    state = "Warning"
 	    rospy.logerr("IR Interrupt Sensor: Bucket not detected, cannot drive yet")
 
@@ -131,7 +122,7 @@ class hopp_coll_states(object):
     #Main Function. 
     def run(self):
         rate = rospy.Rate(10)
-        while not rospy.is_shutdown()
+        while not rospy.is_shutdown():
 	    #get string states for hopper, collect, and scoop_safe, and publish
             hopper_state = self.check_hopper()
             collector_state = self.check_collector()

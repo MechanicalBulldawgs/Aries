@@ -11,10 +11,6 @@ class hopp_coll_commands(object):
 
     def __init__(self):
 
-        #IR Interrupt Distance Constants
-        self.SAFE_DIST_MAX = 10 #CHANGE THIS VALUE
-        self.SAFE_DIST_MIN = 12 #CHANGE THIS VALUE
-
         #Hopper Angle Constansts
         self.HOPPER_MAX = 180
         self.HOPPER_MIN = 75
@@ -41,7 +37,7 @@ class hopp_coll_commands(object):
         # does not immediatly send the angles. 
         self.hopper_angle = 80
         self.collector_angle = 250
-        self.scoop_safe_dist = 10   #CHANGE THIS VALUE
+        self.scoop_safe_bool = 10   #CHANGE THIS VALUE
 
         #Set up publishers to publish commands to command topic
         self.hopper_cmds_pub = rospy.Publisher("hopper_cmds", Int16, queue_size = 10)
@@ -83,17 +79,17 @@ class hopp_coll_commands(object):
         self.scoop_safe_state = state.data     
 
     def get_hopper_command(self, prev_command): #SHOULD WE PASS IN PREV ANGLE AND STATE HERE
-        if self.hopper_state = "Resting":
+        if self.hopper_state == "Resting":
             if self.HOPPER_MIN <= self.hopper_angle <= self.HOPPER_REST_MAX:
                 command = HOPPER_UP
                 state = "Resting"
             elif self.HOPPER_REST_MAX < self.hopper_angle <= self.HOPPER_DUMP_MIN:
                 command = HOPPER_UP
                 state = "Transitioning"
-            else
+            else:
                 rospy.logerr("Inconsistent hopper angle reading, something went wrong...")
                 state = "Warning"
-        elif self.hopper_state = "Transitioning":
+        elif self.hopper_state == "Transitioning":
             if self.HOPPER_MIN <= self.hopper_angle <= self.HOPPER_REST_MAX:
                 command = HOPPER_DOWN
                 state = "Resting"
@@ -103,10 +99,10 @@ class hopp_coll_commands(object):
             elif self.COLLECTOR_DUMP_MIN < self.collector_angle <= self.COLLECTOR_MAX:
                 command = HOPPER_UP
                 state = "Dumping"
-            else
+            else:
                 rospy.logerr("Inconsistent hopper angle reading, something went wrong...")
                 state = "Warning"
-        elif self.hopper_state = "Dumping":
+        elif self.hopper_state == "Dumping":
             if self.COLLECTOR_REST_MAX < self.collector_angle <= self.COLLECTOR_DUMP_MIN:
                 command = HOPPER_DOWN
                 state = "Transitioning"
@@ -114,28 +110,34 @@ class hopp_coll_commands(object):
                 time.wait()
                 command = HOPPER_DOWN
                 state = "Dumping"
-            else 
+            else: 
                 rospy.logerr("Inconsistent hopper angle reading, something went wrong...")
                 state = "Warning"
 
         return state, command  
         
-        def publish_hopper_command(self, hopper_state, hopper_command):
-            state_msg = String()
+        def publish_hopper_command(self, hopper_command):
             command_msg = Int16()
-
-            state_msg.data = hopper_state
             command_msg.data = hopper_command
+            self.hopper_cmds_pub.publish(command_msg) 
 
-            self.hopper_
+	def run(self):
+	    rate = rospy.Rate(10)
+	    while not rospy.is_shutdown():
+		#get commands for hopper and collector
+		hopper_state, hopper_command = self.get_hopper_command(hopper_command)
+		
+	        self.publish_hopper_command(hopper_command)
+		self.hopper_state = hopper_state
+
 
 
 
 
 if __name__ == "__main__":
     try:
-        Hopp_Coll_Commands = hopp_coll_commands()
+        Hopp_Coll_Command = hopp_coll_commands()
     except rospy.ROSInterruptException as er:
         rospy.logerr(str(er))
     else:
-        Hopp_Coll_Commands.run()
+        Hopp_Coll_Command.run()
