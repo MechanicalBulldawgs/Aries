@@ -1,4 +1,5 @@
 <launch>
+    <!-- <param name="/use_sim_time" value="true"/> -->
     <!-- Launch hokuyo node; taken from hokuyo launch files -->
     <node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
         <!-- Remap laser scan topic from /scan to /aries/front_scan -->
@@ -19,11 +20,14 @@
     <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0.5 0 0.5 1.57079632679 0.785398163 0 base_link laser 100" />
 
     <!-- For testing only. This will be dynamic later. -->
-    <node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="0 0 0 0 0 0 map base_link 100" />
+<!--     <node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="0 0 0 0 0 0 map base_link 100" /> -->
+    <node type="map_to_base_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
 
-    <node type="laserscan_to_pointcloud" pkg="aries" name="laserscan_to_pointcloud" />
+    <node type="laserscan_to_pointcloud" pkg="aries" name="laserscan_to_pointcloud"/>
 
     <node type="filter_pointcloud.py" pkg="aries" name="filter_pointcloud" />
 
     <node type="map_pointcloud.py" pkg="aries" name="map_pointcloud" />
+
+    <node type="occupancy_grid_publisher.py" pkg="aries" name="occupancy_grid_publisher" />
 </launch>

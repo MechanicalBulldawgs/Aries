@@ -54,7 +54,6 @@ class Filter_PointCloud(object):
         # Extracts coordinates into numpy arrays
         y = np.array([v.x for v in cloud.points])
         x = np.array([v.y for v in cloud.points])
-        A = np.vstack([x, np.ones(len(x))]).T
 
         # Set number of standard deviations to allow coordinates to vary within
         nStd = 4
@@ -68,6 +67,7 @@ class Filter_PointCloud(object):
         
         # Iteratively removes outliers and fine tunes the regression line.
         while not stop and N > 0:
+            A = np.vstack([x, np.ones(len(x))]).T
             # Performs linear regression
             slope, intercept = np.linalg.lstsq(A, y)[0]
 

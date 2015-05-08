@@ -4,7 +4,7 @@ import aries.srv
 from nav_msgs.msg import OccupancyGrid
 
 if __name__ == "__main__":
-    rospy.init_node("TESTER")
+    rospy.init_node("occupancy_grid_publisher")
     r = rospy.Rate(10)
 
     print("Waiting for /aries/get_occupancy_map...")
