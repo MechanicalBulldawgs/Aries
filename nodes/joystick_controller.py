@@ -60,7 +60,7 @@ class Joystick_Controller(object):
         self.joy_received = False       
 
         # Load topic names
-        joystick_topic            = rospy.get_param("topics/joystick", "joy")
+        self.joystick_topic       = rospy.get_param("topics/joystick", "joy")
         drive_topic               = rospy.get_param("topics/drive_cmds", "cmd_vel")
         hopper_cmds_topic         = rospy.get_param("topics/hopper_cmds", "hopper_control")
         collector_spin_cmds_topic = rospy.get_param("topics/collector_spin_cmds", "collector_spin_control")
@@ -71,7 +71,7 @@ class Joystick_Controller(object):
         self.collector_spin_pub = rospy.Publisher(collector_spin_cmds_topic, Int16, queue_size = 10)
         self.collector_tilt_pub = rospy.Publisher(collector_tilt_cmds_topic, Int16, queue_size = 10)
         # Setup subscribers
-        rospy.Subscriber(joystick_topic, Joy, self.joy_callback)
+        rospy.Subscriber(self.joystick_topic, Joy, self.joy_callback)
 
         atexit.register(self._exit_handler)
 
@@ -86,19 +86,6 @@ class Joystick_Controller(object):
         # TANK DRIVE
         twister.linear.x = float(MAX_TANK_SPEED) * data.axes[JOY_TANK_L_AXIS]
         twister.angular.z = float(MAX_TANK_SPEED) * data.axes[JOY_TANK_R_AXIS]
-        # if data.axes[JOY_TANK_L_AXIS] > 0:
-        #     twister.linear.x = 400
-        # elif data.axes[JOY_TANK_L_AXIS] < 0:
-        #     twister.linear.x = 340
-        # else:
-        #     twister.linear.x = 370
-
-        # if data.axes[JOY_TANK_R_AXIS] > 0:
-        #     twister.angular.z = 400
-        # elif data.axes[JOY_TANK_R_AXIS] < 0:
-        #     twister.angular.z = 340
-        # else:
-        #     twister.angular.z = 370
 
         # Real Robot Drive
         #twister.angular.z = MAX_ANGULAR_SPEED * data.axes[JOY_ANGULAR_AXIS]
@@ -152,7 +139,7 @@ class Joystick_Controller(object):
         '''
         This function is the processing function for this module.
         '''
-        rospy.wait_for_message("joy", Joy)  # Wait for messege on joy topic
+        rospy.wait_for_message(self.joystick_topic, Joy)  # Wait for messege on joy topic
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             ###########################
