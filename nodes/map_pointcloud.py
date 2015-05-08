@@ -131,6 +131,8 @@ class OccupancyGrid(object):
         return occupancy_mapResponse(grid_msg)
 
     def pointcloud_callback(self, cloud):
+        # Learning Rate: should be between 0 and 1
+        alpha = 0.5
 
         # Transforms the point cloud into the /map frame for mapping
         self.tf.waitForTransform("/laser", "/map", rospy.Time(0), rospy.Duration(4.0))
@@ -138,7 +140,8 @@ class OccupancyGrid(object):
 
         for point in cloud.points:
             if (0 < point.x < self.width and 0 < point.y < self.height):
-                self.set_cell((point.x, point.y), min(abs(point.z), 1.0))
+                probability = min(abs(point.z), 1.0)*alpha + self.get_cell((point.x, point.y))*(1-alpha)
+                self.set_cell((point.x, point.y), probability)
 
 
     def run(self):

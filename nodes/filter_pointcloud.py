@@ -109,11 +109,11 @@ class Filter_PointCloud(object):
 
         # Only points with potential obstacles need to be mapped.
         # This removes points from the point cloud within safe z-height ranges
-        newPoints = []
-        for i, point in enumerate(cloud.points):
-            if (abs(point.z) >= 0.1):
-                newPoints.append(cloud.points[i])
-        cloud.points = newPoints
+        # newPoints = []
+        # for i, point in enumerate(cloud.points):
+        #     if (abs(point.z) >= 0.1):
+        #         newPoints.append(cloud.points[i])
+        # cloud.points = newPoints
         
         # Publishes the new cloud of mapping points
         self._cloud_pub.publish(cloud)
