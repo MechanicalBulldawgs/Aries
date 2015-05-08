@@ -141,15 +141,6 @@ class hopp_coll_states(object):
             self.publish_collector_state(collector_state)
 	    self.publish_scoop_safe_state(scoop_safe_state)
 
-	    #publish commands for hopper dump, collector spin, and collector tilt
-	    hopper_command = self.get_hopper_cmd() #MAY NEED CHANGING
-	    collector_spin_command = self.get_collector_spin_cmd()
-	    collector_tilt_command = self.get_collector_tilt_cmd()
-
-	    self.publish_hopper_command(hopper_command)
-	    self.publish_collector_spin_command(collector_spin_command)
-	    self.publish_collector_tilt_command(collector_tilt_command)
-
             rate.sleep()
 
 if __name__ == "__main__":
