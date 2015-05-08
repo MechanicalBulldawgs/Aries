@@ -1,11 +1,9 @@
 <launch>
-    <rosparam command="load" file="$(find aries)/param/localization.yaml" />
-    <rosparam command="load" file="$(find aries)/param/topics.yaml" />
+
     <!-- <param name="/use_sim_time" value="true"/> -->
     <!-- Launch hokuyo node; taken from hokuyo launch files -->
     <node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
         <!-- Remap laser scan topic from /scan to /aries/front_scan -->
-            <remap from="scan" to="aries/front_scan" />
 
         <!-- Starts up faster, but timestamps will be inaccurate. --> 
         <param name="calibrate_time" type="bool" value="false"/> 
