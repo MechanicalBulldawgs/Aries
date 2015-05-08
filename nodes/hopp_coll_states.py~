@@ -70,10 +70,8 @@ class hopp_coll_states(object):
     #Checks the hopper's current angle and determines what state it is in and tell hopper what to do.
     def check_hopper(self):
         if self.HOPPER_MIN <= self.hopper_angle <= self.HOPPER_REST_MAX: 
-	    hopper_cmd = 355 #ADJUST THIS VALUE; should tilt hopper up
             state = "Resting"
         elif self.HOPPER_REST_MAX < self.hopper_angle <= self.HOPPER_DUMP_MIN:
-	    hopper_cmd
             state = "Transitioning"
         elif self.HOPPER_DUMP_MIN < self.hopper_angle <= self.HOPPER_MAX:
             state = "Dumping"
@@ -126,29 +124,17 @@ class hopp_coll_states(object):
 	state_msg.data = scoop_safe_state
 	self.scoop_safe_state_pub.publish(state_msg)
 
-
-
     #Main Function. 
     def run(self):
         rate = rospy.Rate(10)
-        while not rospy.is_shutdown()
-	    #get string states for hopper, collect, and scoop_safe, and publish
+        while not rospy.is_shutdown():
             hopper_state = self.check_hopper()
             collector_state = self.check_collector()
 	    scoop_safe_state = self.check_scoop_safe()
-	    
+
             self.publish_hopper_state(hopper_state)
             self.publish_collector_state(collector_state)
-	    self.publish_scoop_safe_state(scoop_safe_state)
-
-	    #publish commands for hopper dump, collector spin, and collector tilt
-	    hopper_command = self.get_hopper_cmd() #MAY NEED CHANGING
-	    collector_spin_command = self.get_collector_spin_cmd()
-	    collector_tilt_command = self.get_collector_tilt_cmd()
-
-	    self.publish_hopper_command(hopper_command)
-	    self.publish_collector_spin_command(collector_spin_command)
-	    self.publish_collector_tilt_command(collector_tilt_command)
+	    self.publish_scoop_safe_state(scoop_safe_state)	    
 
             rate.sleep()
 
