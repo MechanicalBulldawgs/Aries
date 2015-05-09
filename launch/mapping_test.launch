@@ -1,11 +1,8 @@
 <launch>
-    <rosparam command="load" file="$(find aries)/param/localization.yaml" />
-    <rosparam command="load" file="$(find aries)/param/topics.yaml" />
     <!-- <param name="/use_sim_time" value="true"/> -->
     <!-- Launch hokuyo node; taken from hokuyo launch files -->
     <node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
         <!-- Remap laser scan topic from /scan to /aries/front_scan -->
-            <remap from="scan" to="aries/front_scan" />
 
         <!-- Starts up faster, but timestamps will be inaccurate. --> 
         <param name="calibrate_time" type="bool" value="false"/> 
@@ -14,8 +11,8 @@
         <param name="port" type="string" value="/dev/ttyACM0"/> 
         
         <param name="intensity" type="bool" value="true"/>
-        <param name="min_ang" type="double" value="-1.67"/>
-        <param name="max_ang" type="double" value="1.67"/>
+        <param name="min_ang" type="double" value="-0.829"/>
+        <param name="max_ang" type="double" value="0.829"/>
     </node>
 
     <param name="robot_description" command="$(find xacro)/xacro.py '$(find sick_tim)/urdf/example.urdf.xacro'" />
@@ -33,8 +30,15 @@
     <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0.5 0 0.5 1.57079632679 0.785398163 0 base_link laser 100" />
 
     <!-- For testing only. This will be dynamic later. -->
-    <!-- <node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="10 0 0 0 0 0 map base_link 100" /> -->
-    <node type="map_to_base_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
+     <!--<node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="10 0 0 0 0 0 map base_link 100" /> 
+-->
+
+    <!-- Broadcaster the actually uses localization data. -->
+    <!-- <node type="map_to_base_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
+-->
+
+    <!-- Dynamic test file that moves in a circle to test mapping. -->
+    <node type="mapping_test_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
 
     <node type="laserscan_to_pointcloud" pkg="aries" name="laserscan_to_pointcloud"/>
 
