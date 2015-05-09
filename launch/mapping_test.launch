@@ -1,4 +1,5 @@
 <launch>
+
     <!-- <param name="/use_sim_time" value="true"/> -->
     <!-- Launch hokuyo node; taken from hokuyo launch files -->
     <node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
