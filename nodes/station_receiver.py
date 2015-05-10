@@ -99,7 +99,6 @@ class Station_Receiver(object):
         while not rospy.is_shutdown():
             # Wait to receive data over data line
             data, addr = self.data_sock.recvfrom(BUFFER_SIZE)
-            print("Current Mode: " + str(mode))
             # Safely get current mode
             self.mode_lock.acquire()
             current_mode = self.shared_ctrl_mode.value 
