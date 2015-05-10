@@ -48,6 +48,8 @@ class Station_Transmitter(object):
         # Load topic names
         joystick_topic = rospy.get_param("topics/joystick", "joy")
         op_mode_topic = rospy.get_param("topics/op_mode", "operation_mode")
+        duration_cmds_topic = rospy.get_param("topics/duration_cmds", "duration_cmds")
+
         ################################################
         #######   Setup comms with robot   #############
         self.status_ret_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -62,7 +64,7 @@ class Station_Transmitter(object):
         ################################################
         #######    Subscribe to command topics   #######
         rospy.Subscriber(joystick_topic, Joy, self.joy_callback)
-
+        rospy.Subscriber(duration_cmds_topic, DurationCmd, self.duration_cmd_callback)
         rospy.Subscriber(op_mode_topic, Int8, self.mode_callback)
 
     def run(self):
