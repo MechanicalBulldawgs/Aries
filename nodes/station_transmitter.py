@@ -4,6 +4,7 @@ import roslib; roslib.load_manifest("aries")
 
 from sensor_msgs.msg import Joy
 from std_msgs.msg import String, Int8
+from aries.msg import DurationCmd
 
 '''
 This module is registered as a ROS node and transmits commands from the control station over a UDP socket to the robot.

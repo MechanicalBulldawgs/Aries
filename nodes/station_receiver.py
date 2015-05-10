@@ -86,6 +86,7 @@ class Station_Receiver(object):
             print("Bad Control Line Data")
         else:
             shared_mode.value = mode 
+            print("New mode: " + str(mode))
             self.mode_pub.publish(self.modes_by_val[mode])
         
     def run(self):
@@ -95,6 +96,7 @@ class Station_Receiver(object):
         while not rospy.is_shutdown():
             # Wait to receive data over data line
             data, addr = self.data_sock.recvfrom(BUFFER_SIZE)
+            print("Current Mode: " + str(mode))
             # Safely get current mode
             self.mode_lock.acquire()
             current_mode = self.shared_ctrl_mode.value 
