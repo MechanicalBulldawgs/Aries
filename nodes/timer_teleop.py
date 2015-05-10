@@ -141,13 +141,21 @@ class Duration_Teleop(object):
             self.drive_pub.publish(twist)
         elif cmd == "left":
             twist = Twist()
-            twist.linear.x = -DRIVE_SPEED
-            twist.angular.z = DRIVE_SPEED
+            twist.linear.x = DRIVE_SPEED
+            twist.angular.z = -DRIVE_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "right":
             twist = Twist()
+            twist.linear.x = -DRIVE_SPEED
+            twist.angular.z = DRIVE_SPEED
+            self.drive_pub.publish(twist)
+        elif cmd == "0":
+            twist = Twist()
             twist.linear.x = DRIVE_SPEED
-            twist.angular.z = -DRIVE_SPEED
+            self.drive_pub.publish(twist)
+        elif cmd == "1":
+            twist = Twist()
+            twist.angular.z = DRIVE_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "collect":
             collect_cmd = Int16()

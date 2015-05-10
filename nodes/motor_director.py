@@ -68,6 +68,7 @@ class motor_director(object):
             if self.prev_cmds["LINEARX"] != data.linear.x:
                 self.prev_cmds["LINEARX"] = data.linear.x
                 self.cmd_queue.appendleft(linear_cmd)
+            
             if self.prev_cmds["ANGULARZ"] != data.angular.z:
                 self.prev_cmds["ANGULARZ"] = data.angular.z
                 self.cmd_queue.appendleft(angular_cmd)
