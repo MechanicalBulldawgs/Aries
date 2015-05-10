@@ -77,17 +77,20 @@ class Station_Receiver(object):
         This function runs as background process.  Listens to control line for updates to cmd mode.
         '''
         # Check for data on ctrl line
-        ctrl_data, addr = self.control_sock.recvfrom(BUFFER_SIZE)
-        try:
-            mode_lock.acquire()
-            mode = int(ctrl_data)
-            mode_lock.release()
-        except:
-            print("Bad Control Line Data")
-        else:
-            shared_mode.value = mode 
-            print("New mode: " + str(mode))
-            self.mode_pub.publish(self.modes_by_val[mode])
+        rate = rospy.Rate(100)
+        while not rospy.is_shutdown():
+            ctrl_data, addr = self.control_sock.recvfrom(BUFFER_SIZE)
+            try:
+                mode_lock.acquire()
+                mode = int(ctrl_data)
+                mode_lock.release()
+            except:
+                print("Bad Control Line Data")
+            else:
+                shared_mode.value = mode 
+                print("New mode: " + str(mode))
+                self.mode_pub.publish(self.modes_by_val[mode])
+            rate.sleep()
         
     def run(self):
         '''
