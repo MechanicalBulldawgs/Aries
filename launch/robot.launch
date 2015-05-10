@@ -6,6 +6,7 @@
 
 	<node pkg="aries" type="motor_director.py" output="screen" name="motor_director"/>
 	<node pkg="aries" type="joystick_controller.py" output="screen" name="joystick_controller"/>
+    <node pkg="aries" type="timer_teleop.py" output="screen" name="duration_teleop"/>
 	<node pkg="aries" type="station_receiver.py" output="screen" name="station_receiver"/>
 	
 	

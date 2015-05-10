@@ -4,6 +4,7 @@ import socket, atexit, signal, rospy, cPickle
 from multiprocessing import Process, Value, Lock
 from sensor_msgs.msg import Joy
 from std_msgs.msg import String
+from aries.msg import DurationCmd
 
 '''
 This module runs on the robot and receives messages over a UDP socket connection
@@ -48,7 +49,9 @@ class Station_Receiver(object):
         # Load topic names
         op_mode_topic = rospy.get_param("topics/op_mode", "operation_mode")
         joystick_topic = rospy.get_param("topics/joystick", "joy")
-
+        duration_cmds_topic = rospy.get_param("topics/duration_cmds", "duration_cmds")
+        
+        self.duration_cmds_pub = rospy.Publisher(duration_cmds_topic, DurationCmd, queue_size = 10)
         self.mode_pub = rospy.Publisher(op_mode_topic, String, queue_size = 10)
         self.joy_pub = rospy.Publisher(joystick_topic, Joy, queue_size = 10)
         ################################################
@@ -102,9 +105,9 @@ class Station_Receiver(object):
             if self.modes_by_val[current_mode] == "joystick":
                 # Relay joy message
                 self.joy_pub.publish(data)
-            elif self.modes_by_val[current_mode] == "supervisory":
-                # Relay command
-                pass
+            elif self.modes_by_val[current_mode] == "duration_teleop":
+                # Relay d command
+                self.duration_cmds_pub.publish(data)
             elif self.modes_by_val[current_mode] == "autonomous":
                 pass
 

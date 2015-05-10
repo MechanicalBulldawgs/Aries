@@ -21,7 +21,7 @@ class Station_Transmitter(object):
         Station Transmitter constructor
         '''
         rospy.init_node("station_transmitter")
-        self.current_mode = 1
+        self.current_mode = None
         ################################################
         ####### Load parameters from param files #######
         self.ROBOT_IP = rospy.get_param("control_station_comms/robot_ip", None)
@@ -79,6 +79,14 @@ class Station_Transmitter(object):
         # Send pickle if in correct mode
         if self.modes_by_val[self.current_mode] == "joystick": 
             self.data_sock.sendto(data_pickle, (self.ROBOT_IP, self.DATA_LINE_PORT))
+
+    def duration_cmd_callback(self, data):
+        '''
+        '''
+        data_pickle = cPickle.dumps(data)
+        if self.modes_by_val[self.current_mode] == "duration_teleop":
+            self.data_sock.sendto(data_pickle, (self.ROBOT_IP, self.DATA_LINE_PORT))
+
 
     def mode_callback(self, data):
         '''
