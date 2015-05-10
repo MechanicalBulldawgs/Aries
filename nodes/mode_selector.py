@@ -12,38 +12,26 @@ This module provides an interface to select robot operation modes.
 
   TODO: MAKE THIS BETTER! -- PRETTY GROSS RIGHT NOW.
 '''
-DEFAULT_MODE = "joystick"
+
 
 class Mode_Selector(object):
+    DEFAULT_MODE = "joystick"
 
     def __init__(self):
         '''
         '''
         rospy.init_node("mode_selector")
-        self.mode_pub = rospy.Publisher("operation_mode", Int8, queue_size = 10)
+        self.mode_pub = rospy.Publisher("operation_mode", String, queue_size = 10)
 
         # Load modes
-        self.modes_by_val = {}
-        self.vals_by_mode = {}
         self.current_mode = None
         modes = rospy.get_param("control_station_comms/control_modes")
-        mode_vals = rospy.get_param("control_station_comms/mode_value")
-
-        for i in xrange(0, len(modes)):
-            try:
-                value = int(mode_vals[i])
-                name = modes[i]
-            except:
-                print("Failed to load control modes from parameter server.  Check parameter file.")
-                exit()
-            else:
-                self.modes_by_val[value] = name
-                self.vals_by_mode[name] = value
-        print("Loaded modes: " + str(self.modes_by_val))
+        Mode_Selector.DEFAULT_MODE = rospy.get_param("control_station_comms/default_mode", "joystick")
+        self.valid_modes = [mode for mode in modes]
+        print("Loaded modes: " + str(self.valid_modes))
 
         cmds_topic = rospy.get_param("topics/duration_cmds", "duration_cmds")
         self.duration_cmds_pub = rospy.Publisher(cmds_topic, DurationCmd, queue_size = 10)
-
 
         atexit.register(self._exit_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -56,8 +44,8 @@ class Mode_Selector(object):
 
         # publish default mode
         rospy.sleep(0.1)
-        default_msg = Int8()
-        default_msg.data = self.vals_by_mode[DEFAULT_MODE]
+        default_msg = String()
+        default_msg.data = Mode_Selector.DEFAULT_MODE
         self.mode_pub.publish(default_msg)
 
         while not rospy.is_shutdown():
@@ -72,9 +60,9 @@ class Mode_Selector(object):
                 if uinput == "q": exit()
 
                 if uinput == "cm": 
-                    self.current_mode = DEFAULT_MODE
-                    msg = Int8()
-                    msg.data = self.vals_by_mode[DEFAULT_MODE]
+                    self.current_mode = Mode_Selector.DEFAULT_MODE
+                    msg = String()
+                    msg.data = Mode_Selector.DEFAULT_MODE
                     self.mode_pub.publish(msg)
                     continue
 
@@ -91,23 +79,20 @@ class Mode_Selector(object):
                     self.duration_cmds_pub.publish(dcmd)
             else:
                 print("=== MODE SELECTION MENU ===")
-                for key in self.modes_by_val:
-                    print(str(self.modes_by_val[key] + ": " + str(key)))
+                for mode in self.valid_modes:
+                    print(" - " + str(mode))
                 print("Exit: q")
 
                 uinput = raw_input("Mode>> ")
                 if uinput == "q": exit()
-                
-                try:
-                    int(uinput)  # just check to make sure value is int
-                    self.modes_by_val[int(uinput)]
-                except:
-                    print("Bad input.")
-                else:
-                    self.current_mode = self.modes_by_val[int(uinput)]
-                    msg = Int8()
-                    msg.data = int(uinput)
+                if str(uinput) in self.valid_modes:
+                    self.current_mode = str(uinput)
+                    msg = String()
+                    msg.data = str(uinput)
                     self.mode_pub.publish(msg)
+                else:
+                    print("Bad Input")
+                    
             rate.sleep()
 
     def _exit_handler(self):

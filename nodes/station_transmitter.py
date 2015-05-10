@@ -30,22 +30,6 @@ class Station_Transmitter(object):
         self.DATA_LINE_PORT     = int(rospy.get_param("control_station_comms/data_line_port", -1))
         self.STATUS_RETURN_PORT = int(rospy.get_param("control_station_comms/status_return_port", -1))
 
-        # Load modes
-        self.modes_by_val = {}
-        modes = rospy.get_param("control_station_comms/control_modes")
-        mode_vals = rospy.get_param("control_station_comms/mode_value")
-
-        for i in xrange(0, len(modes)):
-            try:
-                value = int(mode_vals[i])
-                name = modes[i]
-            except:
-                print("Failed to load control modes from parameter server.  Check parameter file.")
-                exit()
-            else:
-                self.modes_by_val[value] = name
-        print("Loaded modes: " + str(self.modes_by_val))
-
         # Load topic names
         joystick_topic = rospy.get_param("topics/joystick", "joy")
         op_mode_topic = rospy.get_param("topics/op_mode", "operation_mode")
@@ -66,7 +50,7 @@ class Station_Transmitter(object):
         #######    Subscribe to command topics   #######
         rospy.Subscriber(joystick_topic, Joy, self.joy_callback)
         rospy.Subscriber(duration_cmds_topic, DurationCmd, self.duration_cmd_callback)
-        rospy.Subscriber(op_mode_topic, Int8, self.mode_callback)
+        rospy.Subscriber(op_mode_topic, String, self.mode_callback)
 
     def run(self):
         '''
@@ -80,14 +64,14 @@ class Station_Transmitter(object):
         # Pickle up message
         data_pickle = cPickle.dumps(data)
         # Send pickle if in correct mode
-        if self.modes_by_val[self.current_mode] == "joystick": 
+        if self.current_mode == "joystick": 
             self.data_sock.sendto(data_pickle, (self.ROBOT_IP, self.DATA_LINE_PORT))
 
     def duration_cmd_callback(self, data):
         '''
         '''
         data_pickle = cPickle.dumps(data)
-        if self.modes_by_val[self.current_mode] == "duration_teleop":
+        if self.current_mode == "duration_teleop":
             self.data_sock.sendto(data_pickle, (self.ROBOT_IP, self.DATA_LINE_PORT))
 
 
@@ -95,7 +79,7 @@ class Station_Transmitter(object):
         '''
         '''
         # Get mode value
-        self.current_mode = data.data
+        self.current_mode = str(data.data)
         # Send mode over socket to robot
         self.control_sock.sendto(str(self.current_mode), (self.ROBOT_IP, self.CONTROL_LINE_PORT))
 

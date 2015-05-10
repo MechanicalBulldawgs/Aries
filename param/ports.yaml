@@ -1,9 +1,9 @@
 ports: {sensor_arduino: /dev/ttyUSB0, motor_arduino: /dev/ttyUSB1, dynamixel: /dev/ttyUSB0}
 baudrates: {dynamixel: 1000000}
 control_station_comms:
-    robot_ip: 192.168.1.13
+    robot_ip: 127.0.0.1 #192.168.1.13
     control_modes: [autonomous, joystick, duration_teleop]
-    mode_value: [0, 1, 2]
+    default_mode: joystick
     control_line_port: 20173
     data_line_port: 20172
     status_return_port: 20171
