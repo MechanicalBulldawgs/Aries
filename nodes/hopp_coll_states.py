@@ -33,19 +33,19 @@ class hopp_coll_states(object):
         #Sets up publisher to publish states onto a topics
         self.hopper_state_pub = rospy.Publisher("hopper_state", String, queue_size = 10)
         self.collector_state_pub = rospy.Publisher("collector_state", String, queue_size = 10)
-	self.scoop_safe_state_pub = rospy.Publisher("scoop_safe_state", String, queue_size = 10)
+        self.scoop_safe_state_pub = rospy.Publisher("scoop_safe_state", String, queue_size = 10)
 
         # Initializes the hopper/collector angles to be considered in rest postion. This prevents log errors since the arduino 
         # does not immediatly send the angles. 
         self.hopper_angle = 80
         self.collector_angle = 250
-	self.scoop_safe_bool = 1
+        self.scoop_safe_bool = 1
 
 
         #Sets up subsribers to get the angles of the collector/hopper
         rospy.Subscriber("hopper_pot", UInt16, self.hopper_callback)
         rospy.Subscriber("collector_pot", UInt16, self.collector_callback)
-	rospy.Subscriber("scoop_safe", Bool, self.scoop_safe_callback)
+        rospy.Subscriber("scoop_safe", Bool, self.scoop_safe_callback)
 
         
 
@@ -59,7 +59,7 @@ class hopp_coll_states(object):
 
     #Sets the data from the IR distance interrupt to data member
     def scoop_safe_callback(self, info):
-	self.scoop_safe_bool = info.data
+        self.scoop_safe_bool = info.data
 
     #Checks the hopper's current angle and determines what state it is in and tell hopper what to do.
     def check_hopper(self):
@@ -105,17 +105,17 @@ class hopp_coll_states(object):
 
     #Check IR Interrupt distance to see whether we can drive
     def check_scoop_safe(self):
-	if self.scoop_safe_bool == 1:
-	    state = "Safe"
-	else:
-	    state = "Warning"
-	    rospy.logerr("IR Interrupt Sensor: Bucket not detected, cannot drive yet")
+    if self.scoop_safe_bool == 1:
+        state = "Safe"
+    else:
+        state = "Warning"
+        rospy.logerr("IR Interrupt Sensor: Bucket not detected, cannot drive yet")
 
     #Publish the interrupt state to it's respective topic
     def publish_scoop_safe_state(self, scoop_safe_state):
-	state_msg = String()
-	state_msg.data = scoop_safe_state
-	self.scoop_safe_state_pub.publish(state_msg)
+        state_msg = String()
+        state_msg.data = scoop_safe_state
+        self.scoop_safe_state_pub.publish(state_msg)
 
 
 
@@ -123,14 +123,14 @@ class hopp_coll_states(object):
     def run(self):
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-	    #get string states for hopper, collect, and scoop_safe, and publish
+        #get string states for hopper, collect, and scoop_safe, and publish
             hopper_state = self.check_hopper()
             collector_state = self.check_collector()
-	    scoop_safe_state = self.check_scoop_safe()
-	    
+            scoop_safe_state = self.check_scoop_safe()
+        
             self.publish_hopper_state(hopper_state)
             self.publish_collector_state(collector_state)
-	    self.publish_scoop_safe_state(scoop_safe_state)
+            self.publish_scoop_safe_state(scoop_safe_state)
 
             rate.sleep()
 
