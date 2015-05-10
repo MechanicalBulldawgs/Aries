@@ -49,7 +49,7 @@ class motor_director(object):
         '''
         This function processes cmds in cmd queue
         '''
-        rate = rospy.Rate(100)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             with self.queue_lock:
                 if len(self.cmd_queue) > 0:
