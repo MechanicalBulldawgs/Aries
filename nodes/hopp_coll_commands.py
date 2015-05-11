@@ -12,18 +12,17 @@ class hopp_coll_commands(object):
     def __init__(self):
 
         #Hopper Angle Constansts
-        self.HOPPER_MAX = 180
-        self.HOPPER_MIN = 75
+        self.HOPPER_MIN = 55
+        self.HOPPER_REST_MAX = 60
+        self.HOPPER_DUMP_MIN = 165
+        self.HOPPER_MAX = 170
 
-        self.HOPPER_REST_MAX = 85
-        self.HOPPER_DUMP_MIN = 175
 
         #Collector Angle Constants
-        self.COLLECTOR_MAX = 300
-        self.COLLECTOR_MIN = 245
-
-        self.COLLECTOR_REST_MAX = 255
-        self.COLLECTOR_DUMP_MIN = 295
+        self.COLLECTOR_MIN = 230
+        self.COLLECTOR_DUMP_MIN = 235
+        self.COLLECTOR_REST_MAX = 260
+        self.COLLECTOR_MAX = 265
 
         #Motor Command constants CHECK THESE VALUES!!!
         self.HOPPER_UP = 385
