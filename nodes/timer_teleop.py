@@ -14,15 +14,15 @@ Module implements duration based teleoperation commands.
 ###################################
 # Global Constants
 # Constants for hopper (150 - 600)
-HOPPER_DUMP = 320   # value to send when dumping
+HOPPER_DUMP = 350   # value to send when dumping
 HOPPER_STOP = 370   # value to send when stopping hopper
-HOPPER_UNDUMP = 420 # value to send when returning to resting state
+HOPPER_UNDUMP = 380 # value to send when returning to resting state
 # Constants for conveyor spin (150 - 600)
-COLLECTOR_SPIN = 400
+COLLECTOR_SPIN = 420
 COLLECTOR_STOP = 370
 COLLECTOR_RSPIN = 340
 # Constants for conveyor tilt (150 - 600)
-COLLECTOR_TILT = 340
+COLLECTOR_TILT = 350
 COLLECTOR_TSTOP = 370
 COLLECTOR_UNTILT = 400
 # Drive constants
@@ -167,10 +167,23 @@ class Duration_Teleop(object):
             self.collector_spin_pub.publish(collect_cmd)
         elif cmd == "tilt-collector":
             # this ignores duration? probably
-            pass
+            tilt_cmd = Int16()
+            tilt_cmd.data = COLLECTOR_TILT
+            self.collector_tilt_pub.publish(tilt_cmd)
+        elif cmd == "untilt-collector":
+            # this ignores duration? probably
+            tilt_cmd = Int16()
+            tilt_cmd.data = COLLECTOR_UNTILT
+            self.collector_tilt_pub.publish(tilt_cmd)
         elif cmd == "dump":
             # this ignores duration? probably
-            pass
+            dump_cmd = Int16()
+            dump_cmd.data = HOPPER_DUMP
+            self.hopper_pub.publish(dump_cmd)
+        elif cmd == "undump":
+            dump_cmd = Int16()
+            dump_cmd.data = HOPPER_UNDUMP
+            self.hopper_pub.publish(dump_cmd)
         elif cmd == "stop":
             self.robot_stop()
         else:

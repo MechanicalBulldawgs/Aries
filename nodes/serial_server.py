@@ -15,7 +15,7 @@ class serial_server(object):
     def __init__(self):
         self.accel_data = {"x":0, "y":0, "z":0, "pitch":0, "roll":0}
         self.gyro_data = {"x":0, "y":0, "z":0}
-        self.pot_data = {"pot1":0, "pot2":0}
+        self.pot_data = {"pot_hopper":0, "pot_collector":0}
         self.ir_data = 0
         
         rospy.init_node('serial_server')
@@ -27,9 +27,10 @@ class serial_server(object):
         """Attempt to get parameters from the ROS server and use them to initialize the list 
         of touch sensors and the connection to the Arduino"""
 
-        port = rospy.get_param('ports/sensor_arduino', '/dev/ttyUSB0')#ACM0')
+        port = '/dev/ttyUSB0'#rospy.get_param('ports/sensor_arduino', '/dev/ttyUSB0')#ACM0')
+        baudrate = 115200
         print("Connecting to Arduino on port: " + str(port))
-        self.arduino = serial.Serial(port, 9600, timeout = 1)
+        self.arduino = serial.Serial(port, baudrate, timeout = 1)
         print("Connected to Arduino on port: " + str(port))
         atexit.register(self._cleanup)
 
