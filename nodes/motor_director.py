@@ -26,10 +26,11 @@ class motor_director(object):
 
         """Attempt to get parameters from the ROS server and use them to initialize the list 
             of touch sensors and the connection to the Arduino"""
-
-        port = "/dev/ttyUSB0"#rospy.get_param('ports/arduino', '/dev/ttyACM0')
+        baudrate = rospy.get_param("ports/baudrates/motor_arduino", 115200)
+        baudrate = int(baudrate)
+        port = "/dev/ttyUSB0"#rospy.get_param('ports/motor_arduino', '/dev/ttyACM0')
         print("Connecting to Arduino on port: " + str(port))
-        self.arduino = serial.Serial(port, 9600, timeout = 1)
+        self.arduino = serial.Serial(port, baudrate, timeout = 1)
         print("Connected to Arduino on port: " + str(port))
 
         # Load topic names
@@ -49,7 +50,7 @@ class motor_director(object):
         '''
         This function processes cmds in cmd queue
         '''
-        rate = rospy.Rate(100)
+        rate = rospy.Rate(10)
         while not rospy.is_shutdown():
             with self.queue_lock:
                 if len(self.cmd_queue) > 0:
@@ -65,11 +66,12 @@ class motor_director(object):
         linear_cmd = "0:" + str(float(int(data.linear.x))) + "\n"
         angular_cmd = "1:" + str(float(int(data.angular.z))) + "\n"        
         with self.queue_lock:
-            if self.prev_cmds["LINEARX"] != data.linear.x:
-                self.prev_cmds["LINEARX"] = data.linear.x
+            if self.prev_cmds["LINEARX"] != float(int(data.linear.x)):
+                self.prev_cmds["LINEARX"] = float(int(data.linear.x))
                 self.cmd_queue.appendleft(linear_cmd)
-            if self.prev_cmds["ANGULARZ"] != data.angular.z:
-                self.prev_cmds["ANGULARZ"] = data.angular.z
+            
+            if self.prev_cmds["ANGULARZ"] != float(int(data.angular.z)):
+                self.prev_cmds["ANGULARZ"] = float(int(data.angular.z))
                 self.cmd_queue.appendleft(angular_cmd)
 
     def dump_callback(self, data):
