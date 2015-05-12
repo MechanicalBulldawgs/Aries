@@ -14,19 +14,19 @@ Module implements duration based teleoperation commands.
 ###################################
 # Global Constants
 # Constants for hopper (150 - 600)
-HOPPER_DUMP = 350   # value to send when dumping
-HOPPER_STOP = 370   # value to send when stopping hopper
-HOPPER_UNDUMP = 380 # value to send when returning to resting state
+HOPPER_DUMP = -24   # value to send when dumping
+HOPPER_STOP = 0   # value to send when stopping hopper
+HOPPER_UNDUMP = 24 # value to send when returning to resting state
 # Constants for conveyor spin (150 - 600)
-COLLECTOR_SPIN = 420
-COLLECTOR_STOP = 370
-COLLECTOR_RSPIN = 340
+COLLECTOR_SPIN = 24
+COLLECTOR_STOP = 0
+COLLECTOR_RSPIN = -24
 # Constants for conveyor tilt (150 - 600)
-COLLECTOR_TILT = 350
-COLLECTOR_TSTOP = 370
-COLLECTOR_UNTILT = 400
+COLLECTOR_TILT = -24
+COLLECTOR_TSTOP = 0
+COLLECTOR_UNTILT = 24
 # Drive constants
-DRIVE_SPEED = 100
+DRIVE_SPEED = 40
 DRIVE_STOP = 0
 ###################################
 
@@ -71,7 +71,7 @@ class Duration_Teleop(object):
         '''
         '''
         rospy.wait_for_message(self.cmds_topic, DurationCmd)
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(5)
         current_cmd = None
         active = False
         start_time = 0 #rospy.get_time() -> get current time in float seconds

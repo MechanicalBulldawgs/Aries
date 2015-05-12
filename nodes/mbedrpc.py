@@ -83,9 +83,13 @@ class SerialRPC(mbed):
         self.ser.setBaudrate(baud)
 
 
-        def rpc(self, name, method, args):
-                self.ser.write("/" + name + "/" + method + " " + " ".join(args) + "\n")
-                return self.ser.readline().strip()
+    def rpc(self, name, method, args):
+        self.ser.write("/" + name + "/" + method + " " + " ".join(args) + "\n")
+        try:
+            return_val = self.ser.readline().strip()
+        except:
+            return_val = None
+        return return_val
 
 class HTTPRPC(mbed):
 

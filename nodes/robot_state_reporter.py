@@ -58,8 +58,8 @@ class State_Reporter(object):
         self.collector_state_pub = rospy.Publisher(collector_state_topic, String, queue_size = 10)
 
         #Sets up subsribers to get the angles of the collector/hopper
-        rospy.Subscriber(hopper_pot_topic, UInt16, self.hopper_callback)
-        rospy.Subscriber(collector_pot_topic, UInt16, self.collector_callback)
+        rospy.Subscriber(self.hopper_pot_topic, UInt16, self.hopper_callback)
+        rospy.Subscriber(self.collector_pot_topic, UInt16, self.collector_callback)
 
     def run(self):
         '''
