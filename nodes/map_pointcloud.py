@@ -26,7 +26,7 @@ from aries.srv import occupancy_map, occupancy_mapRequest, occupancy_mapResponse
 class OccupancyGrid(object):
     '''
     '''
-    def __init__(self, width, height, resolution, origin_x=0, origin_y=0):
+    def __init__(self, width, height, resolution,alpha=0.5, origin_x=0, origin_y=0):
         '''
         Constructor for OccupancyGrid class 
         width: disired width in meters of occupancy grid  (x axis)
@@ -55,6 +55,7 @@ class OccupancyGrid(object):
         self.width = width 
         self.height = height
         self.resolution = resolution
+        self.alpha = alpha
         self.origin_x = origin_x
         self.origin_y = origin_y
 
@@ -126,7 +127,7 @@ class OccupancyGrid(object):
 
     def pointcloud_callback(self, cloud):
         # Learning Rate: should be between 0 and 1
-        alpha = 0.5
+        alpha = self.alpha
 
         # Transforms the point cloud into the /map frame for mapping
         self.tf.waitForTransform("laser", "map", rospy.Time(0), rospy.Duration(4.0))
@@ -158,5 +159,6 @@ if __name__ == '__main__':
     cellWidth = rospy.get_param("map_params/width")
     cellHeight = rospy.get_param("map_params/height")
     cellResolution = rospy.get_param("map_params/resolution")
-    mpc = OccupancyGrid(width=cellWidth, height=cellHeight, resolution=cellResolution)
+    learningRate = rospy.get_param("map_params/learningRate")
+    mpc = OccupancyGrid(width=cellWidth, height=cellHeight, resolution=cellResolution, alpha=learningRate)
     mpc.run()
