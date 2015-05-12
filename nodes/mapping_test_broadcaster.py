@@ -8,7 +8,7 @@ import math
 if __name__ == '__main__':
     rospy.init_node('map_to_base_broadcaster')
     br = tf.TransformBroadcaster()
-    rate = rospy.Rate(10.0)
+    rate = rospy.Rate(10)
     while not rospy.is_shutdown():
         t = rospy.Time.now().to_sec()
         br.sendTransform((2+2*math.sin(t), 2+2*math.cos(t), 0.14605), 

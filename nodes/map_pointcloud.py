@@ -44,13 +44,13 @@ class OccupancyGrid(object):
         # Creates the ROS node.
         rospy.init_node("map_pointcloud")
 
+        self.tf = TransformListener()
+
         # Inits the pointcloud Subscriber
         rospy.Subscriber("/aries/filtered_front_pointcloud", PointCloud, self.pointcloud_callback)
 
         # Initialize service that gets the current angle of the lidar
         self._service = rospy.Service("/aries/get_occupancy_map", occupancy_map, self.handle_get_occupancy_map)
-
-        self.tf = TransformListener()
 
         self.width = width 
         self.height = height
@@ -140,7 +140,7 @@ class OccupancyGrid(object):
 
         for point in cloud.points:
             if (0 < point.x < self.width and 0 < point.y < self.height):
-                probability = min(abs(point.z), 1.0)*alpha + self.get_cell((point.x, point.y))*(1-alpha)
+                probability = min(abs(3*point.z), 1.0)*alpha + self.get_cell((point.x, point.y))*(1-alpha)
                 self.set_cell((point.x, point.y), probability)
 
 

@@ -33,7 +33,7 @@
     0.619125 meters from the lidar down to the base of the robot chassis
     1.57079632679 radian pitch angle that the lidar is tilted towards the ground
     0.785398163 radian rotation angle so that the x-axis positive is forward -->
-    <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0.3937 0 0.619125 1.57079632679 0.785398163 0 base_link laser 100" />
+    <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0.4 0 0.619125 1.57079632679 0.785398163 0 base_link laser 100" />
 
     <!-- For testing only. This will be dynamic later. -->
      <!--<node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="10 0 0 0 0 0 map base_link 100" /> 
