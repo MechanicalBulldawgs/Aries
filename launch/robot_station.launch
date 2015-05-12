@@ -1,0 +1,22 @@
+<launch>
+	<!-- Used to launch control station software --> 
+
+	<rosparam command="load" file="$(find aries)/param/ports.yaml" />
+    <rosparam command="load" file="$(find aries)/param/topics.yaml" />
+    <rosparam command="load" file="$(find aries)/param/motor_params.yaml" />
+
+	<node name="joystick" pkg="joy" type="joy_node"/>	
+
+    <node pkg="aries" type="motor_director.py" output="screen" name="motor_director"/>
+
+	<node pkg="aries" type="joystick_controller.py" output="screen" name="joystick_controller"/>
+
+    <node pkg="aries" type="timer_teleop.py" output="screen" name="duration_teleop"/>
+
+    <node pkg="aries" type="serial_server.py" output="screen" name="serial_server"/>
+
+    <node pkg="aries" type="dump_controller.py" output="screen" name="dump_controller"/>
+
+    <node pkg="aries" type="robot_state_reporter.py" output="screen" name="robot_state_reporter"/>
+
+</launch>

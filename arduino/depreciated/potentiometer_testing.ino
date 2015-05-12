@@ -20,16 +20,17 @@ void loop()
 {
 	int degrees;
 	degrees = getDegree();
-	Serial.println("The angle between the mark and the starting position:");
-	Serial.println(degrees);
+	//Serial.println("The angle between the mark and the starting position:");
+        String str = String(degrees);
+	Serial.println("@POT_COLLECTOR "+str);
 	
-        if (degrees >= MAX_ANGLE) {
-         Serial.println("Hopper has reached max angle, stop motor(ROSify this)");
-        } 
-        
-        if (degrees <= MIN_ANGLE) {
-          Serial.println("Hopper has reached min angle, stop motor(ROSify this)");
-        }
+//        if (degrees >= MAX_ANGLE) {
+//         Serial.println("Hopper has reached max angle, stop motor(ROSify this)");
+//        } 
+//        
+//        if (degrees <= MIN_ANGLE) {
+//          Serial.println("Hopper has reached min angle, stop motor(ROSify this)");
+//        }
         
 	delay(500);
 }

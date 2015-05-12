@@ -1,6 +1,5 @@
 #include <Wire.h>
 #include <math.h>
-#include <Adafruit_PWMServoDriver.h>
 
 #include <Adafruit_Sensor.h>
 #include <Adafruit_L3GD20_U.h>
@@ -8,28 +7,22 @@
 #include <Adafruit_9DOF.h>
 
 //Timer Values
-#define FREQUENCY 10 //in Hz, e.g. 10 = 10 Hz = 0.1s
+#define FREQUENCY 1 //in Hz, e.g. 10 = 10 Hz = 0.1s
 bool timer1_flag = false;
 
-//Motor Values
-#define MOTOR_SCALE 0.902
-#define MOTOR_OFFSET 370.0
-#define MOTOR_MAX 600.0
-#define MOTOR_MIN 150.0
-float base_linear, base_angular, converted_output;
 
 //Potentiometer Values
-#define POT1_PIN A2
-#define POT2_PIN A3
+#define POT_HOPPER_PIN A2
+#define POT_COLLECTOR_PIN A3
 #define ADC_REF 5 //reference voltage of ADC (V)
 #define GROVE_VCC 5 //VCC of the grove interface (V)
 #define FULL_ANGLE 300 //full value of the rotary angle (degrees)
-int pot1_angle;
-int pot2_angle;
+int pot_hopper_angle;
+int pot_collector_angle;
 
 //IR Values
 #define IR_PIN 6
-bool ir_triggered = false
+bool ir_triggered = false;
 
 #define MIN_ANGLE 55  //hopper shouldn't return past this point; send stop message
 #define MAX_ANGLE 165 // hopper should stop here; send stop message
@@ -45,11 +38,9 @@ bool gyro_connected = false;
 void setup(void)
 {
   Serial.begin(9600);
-  Serial.println(F("Ares Arduino")); Serial.println("");
+  Serial.println(F("Ares Arduino Sensor Interface")); Serial.println("");
   
-  pwm.begin();
-  pwm.setPWMFreq(60); //Sets frequency to send to servo. 
-  initPotentiometers()
+  initPotentiometers();
   initIR();
   init_timer1(FREQUENCY);
 
@@ -65,24 +56,13 @@ void loop(void)
   if (timer1_flag) {
     timer1_flag = false;
 
-    update_motors();
     readPotentiometers();
     readIR();
     printData();
+    
   }
 }
 
-void limit_data(int min, int max, int data) {
-  /**
-  * Returns data, capped at the maximum and miminum values
-  */
-  if (data > max) {
-    return max;
-  } else if (data < min){
-    return min;
-  }
-  return data;
-}
 
 void init_timer1(int frequency) {
   /**
@@ -103,7 +83,7 @@ void init_timer1(int frequency) {
   sei(); //enable interrupts
 }
 
-ISR(TIMER0_COMPA_vect) {
+ISR(TIMER1_COMPA_vect) {
    timer1_flag = true;
 }
 
@@ -120,8 +100,8 @@ void initPotentiometers() {
   /**
   * Set pins for potentiometers to inputs
   */
-  pinMode(POT1_PIN, INPUT);
-  pinMode(POT2_PIN, INPUT);
+  pinMode(POT_HOPPER_PIN, INPUT);
+  pinMode(POT_COLLECTOR_PIN, INPUT);
 }
 
 void initIR() {
@@ -136,19 +116,19 @@ void readPotentiometers() {
   * Get value from potentiometers and convert to angles, then save the values to
   * pot1_angle and pot2_angle
   */
-  int val1 = analogRead(POT1_PIN);
-  int val2 = analogRead(POT2_PIN);
+  int val1 = analogRead(POT_HOPPER_PIN);
+  int val2 = analogRead(POT_COLLECTOR_PIN);
   float voltage1 = (float)val1*ADC_REF/1023;
   float voltage2 = (float)val2*ADC_REF/1023;
-  pot1_angle = (voltage1*FULL_ANGLE)/GROVE_VCC;
-  pot2_angle = (voltage2*FULL_ANGLE)/GROVE_VCC;
+  pot_hopper_angle = (voltage1*FULL_ANGLE)/GROVE_VCC;
+  pot_collector_angle = (voltage2*FULL_ANGLE)/GROVE_VCC;
 }
 
 void readIR() {
   /**
   * Sets ir_triggered to 1 if the digital pin goes low, otherwise sets it to 0
   */
-  ir_triggered = (digitalRead(IR_DIST_INTER) == LOW)? 1:0;
+  ir_triggered = (digitalRead(IR_PIN) == LOW)? 1:0;
 }
 
 void printData() {
@@ -183,7 +163,7 @@ void printData() {
 
   Serial.print("{\"data\": {");
   if (accel_connected || gyro_connected) {
-    Serial.print{"\"imu\": {"}
+    Serial.print("\"imu\": {");
   }
   if (accel_connected) {
     accel.getEvent(&event);
@@ -217,42 +197,11 @@ void printData() {
   if (accel_connected || gyro_connected) {
     Serial.print("},");
   }
-  Serial.print("\"potentiometers\": {\"pot1\":");
-  Serial.print(pot1_angle);
-  Serial.print(", \"pot2\":");
-  Serial.print(pot2_angle);
+  Serial.print("\"potentiometers\": {\"pot_hopper\":");
+  Serial.print(pot_hopper_angle);
+  Serial.print(", \"pot_collector\":");
+  Serial.print(pot_collector_angle);
   Serial.print("}, \"ir\":");
   Serial.print(ir_triggered);
   Serial.print("}}\n");
-}
-
-void update_motors() {
-  /**
-  * Checks if a new motor command is available. If so, attempts to parse the command 
-  * then converts the command to PWM values and publishes it to the motors.
-  * If the command cannot be parsed, flushes the buffer.
-  */
-  if (Serial.available()) {
-    char label = Serial.read();
-    Serial.print("Label: "); Serial.print(label); 
-    char separator = Serial.read();
-    Serial.print("; Separator: "); Serial.println(separator); 
-    if(separator == ':'){
-      float value = Serial.parseFloat();
-      Serial.print("; Value: "); Serial.println(value);
-
-      uint8_t motor_num = label - '0';
-      if (motor_num >= 0 && motor_num <= 9) {
-        base_linear = value;
-        converted_output = base_linear * MOTOR_SCALE + MOTOR_OFFSET;
-        converted_data = limit_data(MOTOR_MIN, MOTOR_MAX, converted_output);
-        pwm.setPWM(motor_num, 0, (int)LOut);  
-        Serial.print("X: "); 
-        Serial.println(base_linear);
-      }
-    }
-    else{
-     Serial.flush(); 
-    } 
-  }
 }

@@ -7,3 +7,9 @@ topics:
     collector_tilt_cmds: collector_tilt_control     # ROS Int16 msgs
     navigation_goals: nav_goal                      # ROS Point msgs
     localization_pose: beacon_localization_pose     # ROS Pose msgs
+    hopper_potentiometer: hopper_pot                # ROS UInt16 msgs
+    collector_potentiometer: collector_pot          # ROS UInt16 msgs
+    hopper_state: hopper_state
+    collector_state: collector_state 
+    scoop_safety: scoop_safety
+    dump_cmds: dump_cmds

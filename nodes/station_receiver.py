@@ -4,6 +4,7 @@ import socket, atexit, signal, rospy, cPickle
 from multiprocessing import Process, Value, Lock
 from sensor_msgs.msg import Joy
 from std_msgs.msg import String
+from aries.msg import DurationCmd
 
 '''
 This module runs on the robot and receives messages over a UDP socket connection
@@ -30,25 +31,21 @@ class Station_Receiver(object):
         self.DATA_LINE_PORT     = int(rospy.get_param("control_station_comms/data_line_port", -1))
         self.STATUS_RETURN_PORT = int(rospy.get_param("control_station_comms/status_return_port", -1))
         # Load modes
-        self.modes_by_val = {}
         modes = rospy.get_param("control_station_comms/control_modes")
-        mode_vals = rospy.get_param("control_station_comms/mode_value")
-
-        for i in xrange(0, len(modes)):
-            try:
-                value = int(mode_vals[i])
-                name = modes[i]
-            except:
-                print("Failed to load control modes from parameter server.  Check parameter file.")
-                exit()
-            else:
-                self.modes_by_val[value] = name
-        print("Loaded modes: " + str(self.modes_by_val))
+        self.valid_modes = [mode for mode in modes]
+        self.modes_by_key = {}
+        self.modes_by_name = {}
+        for i in xrange(0, len(self.valid_modes)):
+            self.modes_by_key[i] = self.valid_modes[i]
+            self.modes_by_name[self.valid_modes[i]] = i
+        print("Loaded modes: " + str(self.valid_modes))
 
         # Load topic names
         op_mode_topic = rospy.get_param("topics/op_mode", "operation_mode")
         joystick_topic = rospy.get_param("topics/joystick", "joy")
-
+        duration_cmds_topic = rospy.get_param("topics/duration_cmds", "duration_cmds")
+        
+        self.duration_cmds_pub = rospy.Publisher(duration_cmds_topic, DurationCmd, queue_size = 10)
         self.mode_pub = rospy.Publisher(op_mode_topic, String, queue_size = 10)
         self.joy_pub = rospy.Publisher(joystick_topic, Joy, queue_size = 10)
         ################################################
@@ -74,16 +71,20 @@ class Station_Receiver(object):
         This function runs as background process.  Listens to control line for updates to cmd mode.
         '''
         # Check for data on ctrl line
-        ctrl_data, addr = self.control_sock.recvfrom(BUFFER_SIZE)
-        try:
-            mode_lock.acquire()
-            mode = int(ctrl_data)
-            mode_lock.release()
-        except:
-            print("Bad Control Line Data")
-        else:
-            shared_mode.value = mode 
-            self.mode_pub.publish(self.modes_by_val[mode])
+        rate = rospy.Rate(100)
+        while not rospy.is_shutdown():
+            ctrl_data, addr = self.control_sock.recvfrom(BUFFER_SIZE)
+
+            if str(ctrl_data) in self.valid_modes:
+                mode_lock.acquire()
+                shared_mode.value = self.modes_by_name[ctrl_data]
+                mode_lock.release()
+                print("New mode: " + str(ctrl_data))
+                self.mode_pub.publish(str(ctrl_data))
+            else:
+                print("Bad control line data")
+
+            rate.sleep()
         
     def run(self):
         '''
@@ -94,18 +95,18 @@ class Station_Receiver(object):
             data, addr = self.data_sock.recvfrom(BUFFER_SIZE)
             # Safely get current mode
             self.mode_lock.acquire()
-            current_mode = self.shared_ctrl_mode.value 
+            current_mode = self.modes_by_key[self.shared_ctrl_mode.value]
             self.mode_lock.release()
             # Unpickle data
             data = cPickle.loads(data)
             # Handle data appropriately
-            if self.modes_by_val[current_mode] == "joystick":
+            if current_mode == "joystick":
                 # Relay joy message
                 self.joy_pub.publish(data)
-            elif self.modes_by_val[current_mode] == "supervisory":
-                # Relay command
-                pass
-            elif self.modes_by_val[current_mode] == "autonomous":
+            elif current_mode == "duration_teleop":
+                # Relay d command
+                self.duration_cmds_pub.publish(data)
+            elif current_mode == "autonomous":
                 pass
 
             rate.sleep()
