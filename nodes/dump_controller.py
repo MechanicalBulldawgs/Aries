@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import rospy
+from std_msgs.msg import UInt16, Int16, String
 
 '''
 This module listens for commands to dump, then handles coordinating the various motors for dumping.
@@ -42,25 +43,21 @@ class Dump_Controller(object):
             rospy.logerr("Failed to load motor settings from parameter server.")
             exit()
 
-        self.hopper_state = None
-        self.collector_state = None
         self.hopper_angle = None
-        self.conllector_angle = None
+        self.collector_angle = None
         self.dump_duration = 5  # Duration (seconds) for waiting with dump at dump state for dirt to fall into collection bin
-
+        self.take_dump = False
         # Load topics
         hopper_pot_topic = rospy.get_param("topics/hopper_potentiometer", "hopper_pot")
         collector_pot_topic = rospy.get_param("topics/collector_potentiometer", "collector_pot")
-        hopper_state_topic = rospy.get_param("topics/hopper_state", "hopper_state")
-        collector_state_topic = rospy.get_param("topics/collector_state", "collector_state")
         hopper_cmds_topic = rospy.get_param("topics/hopper_cmds", "hopper_control")
         collector_tilt_topic = rospy.get_param("topics/collector_tilt_cmds", "collector_tilt_control")
+        dump_cmds_topic = rospy.get_param("topics/dump_cmds", "dump_cmds")
         # Setup subscriptions
         rospy.Subscriber(hopper_pot_topic, UInt16, self.hopper_pot_callback)
         rospy.Subscriber(collector_pot_topic, UInt16, self.collector_pot_callback)
+        rospy.Subscriber(dump_cmds_topic, String, self.dump_cmds_callback)
         # Setup publishers
-        self.hopper_state_pub = rospy.Publisher(hopper_state_topic, String, queue_size = 10)
-        self.collector_state_pub = rospy.Publisher(collector_state_topic, String, queue_size = 10)
         self.hopper_cmds_pub = rospy.Publisher(hopper_cmds_topic, Int16, queue_size = 10)
         self.collector_tilt_pub = rospy.Publisher(collector_tilt_topic, Int16, queue_size = 10)
 
@@ -69,39 +66,55 @@ class Dump_Controller(object):
         '''
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-
-            ##############################
-            # Orchestrate dump action
-            ##############################
-            #tilt collector back
-            while self.collector_angle < self.collector_max[0]:
-                self.publish_collector_tilt_command(self.collector_untilt_signal)
-                rate.sleep()
-            #stop collector
-            self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
-
-            #dump hopper and wait a few seconds
-            while self.hopper_angle < self.hopper_max[0]:
-                self.publish_hopper_command(self.dump_signal)
-                rate.sleep()
-
-            rospy.sleep(self.dump_duration)
-
-            #put hopper back down
-            while self.hopper_angle > self.hopper_min[0]:
-                self.publish_hopper_command(self.undump_signal)
-                rate.sleep()
-            #stop hopper
-            self.publish_hopper_command(self.hopper_stop_signal)
-
-            #put collector back towards hopper
-            while self.collector_angle > self.collector_min[0]:
-                self.publish_collector_tilt_command(self.collector_tilt_signal)
-                rate.sleep()
-            #stop collector
-            self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
-
+            # Grab current command
+            dump = self.take_dump
+            # if dump, dump
+            if dump:
+                self.take_dump = False
+                self.dump()
+                
             rate.sleep()
+
+    def dump(self):
+        '''
+        Calling this function orchestrates a dump.
+        '''
+        ##############################
+        # Orchestrate dump action
+        ##############################
+        #tilt collector back
+        while self.collector_angle < self.collector_max[0]:
+            self.publish_collector_tilt_command(self.collector_untilt_signal)
+            rate.sleep()
+        #stop collector
+        self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
+
+        #dump hopper and wait a few seconds
+        while self.hopper_angle < self.hopper_max[0]:
+            self.publish_hopper_command(self.dump_signal)
+            rate.sleep()
+
+        rospy.sleep(self.dump_duration)
+
+        #put hopper back down
+        while self.hopper_angle > self.hopper_min[0]:
+            self.publish_hopper_command(self.undump_signal)
+            rate.sleep()
+        #stop hopper
+        self.publish_hopper_command(self.hopper_stop_signal)
+
+        #put collector back towards hopper
+        while self.collector_angle > self.collector_min[0]:
+            self.publish_collector_tilt_command(self.collector_tilt_signal)
+            rate.sleep()
+        #stop collector
+        self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
+
+    def dump_cmds_callback(self, data):
+        '''
+        Callback for dump cmds topic.
+        '''
+        self.take_dump = True if data.data == "DUMP" else False
 
     def hopper_pot_callback(self, data):
         '''

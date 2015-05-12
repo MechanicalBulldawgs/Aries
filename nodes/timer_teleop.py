@@ -4,7 +4,7 @@ import rospy
 from threading import Lock
 from aries.msg import DurationCmd
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16, String
 
 
 '''
@@ -46,13 +46,16 @@ class Duration_Teleop(object):
         drive_topic               = rospy.get_param("topics/drive_cmds", "cmd_vel")
         hopper_cmds_topic         = rospy.get_param("topics/hopper_cmds", "hopper_control")
         collector_spin_cmds_topic = rospy.get_param("topics/collector_spin_cmds", "collector_spin_control")
-        collector_tilt_cmds_topic = rospy.get_param("topics/collector_tilt_cmds", "collector_tilt_control")     
+        collector_tilt_cmds_topic = rospy.get_param("topics/collector_tilt_cmds", "collector_tilt_control") 
+        dump_topic                = rospy.get_param("topics/dump_cmds", "dump_cmds")
+
 
         # Setup publishers
         self.drive_pub = rospy.Publisher(drive_topic, Twist, queue_size = 10)
         self.hopper_pub = rospy.Publisher(hopper_cmds_topic, Int16, queue_size = 10)
         self.collector_spin_pub = rospy.Publisher(collector_spin_cmds_topic, Int16, queue_size = 10)
         self.collector_tilt_pub = rospy.Publisher(collector_tilt_cmds_topic, Int16, queue_size = 10)
+        self.dump_pub = rospy.Publisher(dump_topic, String, queue_size = 10)
 
         rospy.Subscriber(self.cmds_topic, DurationCmd, self.cmd_callback)
 
@@ -78,6 +81,7 @@ class Duration_Teleop(object):
                 new_cmd = self.new_cmd
                 self.new_cmd = False
                 current_cmd = self.current_cmd if new_cmd else current_cmd
+                if current_cmd.cmd == "take-dump": current_cmd.duration = 0
             # if new cmd: interrupt last command (send stops)
             if new_cmd:
                 print("New command received")
@@ -186,6 +190,10 @@ class Duration_Teleop(object):
             self.hopper_pub.publish(dump_cmd)
         elif cmd == "stop":
             self.robot_stop()
+        elif cmd == "take-dump":
+            dump_cmd = String()
+            dump_cmd.data = "DUMP"
+            self.dump_pub.publish(dump_cmd)
         else:
             # invalid command
             pass

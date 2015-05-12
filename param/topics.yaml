@@ -11,3 +11,5 @@ topics:
     collector_potentiometer: collector_pot          # ROS UInt16 msgs
     hopper_state: hopper_state
     collector_state: collector_state 
+    scoop_safety: scoop_safety
+    dump_cmds: dump_cmds

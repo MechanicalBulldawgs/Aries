@@ -5,8 +5,7 @@
 import rospy, tf, serial, atexit, json
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion
-from std_msgs.msg import Bool
-from std_msgs.msg import UInt16
+from std_msgs.msg import Bool, UInt16
 
 
 class serial_server(object):
@@ -20,7 +19,7 @@ class serial_server(object):
         
         rospy.init_node('serial_server')
         self.imu_pub = rospy.Publisher("imu", Imu, queue_size = 10)
-        self.scoop_safety_pub = rospy.Publisher("scoop_safe", Bool, queue_size = 10)
+        self.scoop_safety_pub = rospy.Publisher("scoop_safety", Bool, queue_size = 10)
         self.collector_pub = rospy.Publisher("collector_pot", UInt16, queue_size = 10)
         self.hopper_pub = rospy.Publisher("hopper_pot", UInt16, queue_size = 10)
 
