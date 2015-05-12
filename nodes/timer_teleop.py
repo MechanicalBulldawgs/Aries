@@ -41,6 +41,26 @@ class Duration_Teleop(object):
         self.new_cmd = False        # Flag set when new message received
         self.current_cmd = None     # Stores current duration command
 
+        # Load motor values
+        global HOPPER_DUMP, HOPPER_STOP, HOPPER_UNDUMP 
+        global COLLECTOR_SPIN, COLLECTOR_STOP, COLLECTOR_RSPIN 
+        global COLLECTOR_TILT, COLLECTOR_TSTOP, COLLECTOR_UNTILT
+        try:
+            # Constants for hopper
+            HOPPER_DUMP = rospy.get_param("dump_settings/dump_signal")
+            HOPPER_STOP = rospy.get_param("dump_settings/stop_signal")
+            HOPPER_UNDUMP = rospy.get_param("dump_settings/undump_signal")
+            # Constants for conveyor spin
+            COLLECTOR_SPIN = rospy.get_param("collector_settings/spin_signal")
+            COLLECTOR_STOP = rospy.get_param("collector_settings/spin_stop_signal")
+            COLLECTOR_RSPIN = rospy.get_param("collector_settings/unspin_signal")
+            # Constants for conveyor tilt (150 - 600)
+            COLLECTOR_TILT = rospy.get_param("collector_settings/tilt_signal")
+            COLLECTOR_TSTOP = rospy.get_param("collector_settings/tilt_stop_signal")
+            COLLECTOR_UNTILT = rospy.get_param("collector_settings/untilt_signal")
+        except:
+            rospy.logerr("Failed to load motor parameters.")
+
         # Load topic names
         self.cmds_topic           = rospy.get_param("topics/duration_cmds", "duration_cmds")
         drive_topic               = rospy.get_param("topics/drive_cmds", "cmd_vel")

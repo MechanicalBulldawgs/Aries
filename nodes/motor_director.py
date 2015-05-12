@@ -19,9 +19,8 @@ class motor_director(object):
         
         """Attempt to get parameters from the ROS server and use them to initialize the list 
             of touch sensors and the connection to the Arduino"""
-        baudrate = rospy.get_param("ports/baudrates/motor_arduino", 115200)
-        baudrate = 921600#int(baudrate)
-        port = "/dev/ttyACM0"#rospy.get_param('ports/motor_arduino', '/dev/ttyACM0')
+        baudrate = rospy.get_param("ports/baudrates/mbed", 115200)
+        port = rospy.get_param('ports/mbed', '/dev/ttyACM0')
         self.mbed = SerialRPC(port, baudrate)
         print("Connected to mbed on port: " + str(port))
 
