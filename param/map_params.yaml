@@ -1,5 +1,5 @@
 map_params:
     width: 20  # x meters
     height: 20  # x meters
-    resolution: 0.1  # x by x meters in a cell
+    resolution: 0.05  # x by x meters in a cell
     learningRate: 0.5  # Learning Rate: should be between 0 and 1

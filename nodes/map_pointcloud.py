@@ -26,7 +26,7 @@ from aries.srv import occupancy_map, occupancy_mapRequest, occupancy_mapResponse
 class OccupancyGrid(object):
     '''
     '''
-    def __init__(self, width, height, resolution,alpha=0.5, origin_x=0, origin_y=0):
+    def __init__(self, width, height, resolution, alpha=0.5, origin_x=0, origin_y=0):
         '''
         Constructor for OccupancyGrid class 
         width: disired width in meters of occupancy grid  (x axis)
@@ -69,7 +69,7 @@ class OccupancyGrid(object):
          construct and set self.grid 
         '''
         self.grid = np.zeros((height / resolution, width / resolution))
-        self.grid.fill(-1)
+        # self.grid.fill(-1)
 
     def _loc_to_indices(self, loc):
         '''
