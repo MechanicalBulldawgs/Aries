@@ -74,14 +74,8 @@ class OccupancyGrid(object):
         '''
         Transforms global location coordinates (given in meters as x, y position tuple) to grid indices
         '''
-        x = int(loc[0] / self.resolution)
-        # print(x)
-        if loc[0] / self.resolution - x >= 0.5: x += 1
-        # print(x)
-        y = int(loc[1] / self.resolution)
-        # print(y)
-        if loc[1] / self.resolution - y >= 0.5: y += 1
-        # print(y)
+        x = int(round(loc[0] / self.resolution))
+        y = int(round(loc[1] / self.resolution))
         return (x, y)
 
     def set_cell(self, loc, value):
@@ -135,8 +129,8 @@ class OccupancyGrid(object):
         alpha = 0.5
 
         # Transforms the point cloud into the /map frame for mapping
-        self.tf.waitForTransform("/laser", "/map", rospy.Time(0), rospy.Duration(4.0))
-        cloud = self.tf.transformPointCloud("/map", cloud)
+        self.tf.waitForTransform("laser", "map", rospy.Time(0), rospy.Duration(4.0))
+        cloud = self.tf.transformPointCloud("map", cloud)
 
         for point in cloud.points:
             if (0 < point.x < self.width and 0 < point.y < self.height):
@@ -152,7 +146,7 @@ class OccupancyGrid(object):
         rospy.sleep(5)
         
         # Waits until a transform is available
-        self.tf.waitForTransform("/laser", "/map", rospy.Time(0), rospy.Duration(4.0))
+        self.tf.waitForTransform("laser", "map", rospy.Time(0), rospy.Duration(4.0))
         
         # Main message processing loop
         while not rospy.is_shutdown():
@@ -161,5 +155,8 @@ class OccupancyGrid(object):
 
 
 if __name__ == '__main__':
-    mpc = OccupancyGrid(width=20, height=20, resolution=0.1)
+    cellWidth = rospy.get_param("map_params/width")
+    cellHeight = rospy.get_param("map_params/height")
+    cellResolution = rospy.get_param("map_params/resolution")
+    mpc = OccupancyGrid(width=cellWidth, height=cellHeight, resolution=cellResolution)
     mpc.run()
