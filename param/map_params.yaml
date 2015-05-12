@@ -1,0 +1,4 @@
+map_params:
+    width: 20  # 20 meters
+    height: 20  # 20 meters
+    resolution: 0.1  # 0.1 by 0.1 meters in a cell
