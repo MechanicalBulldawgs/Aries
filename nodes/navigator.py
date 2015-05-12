@@ -31,7 +31,8 @@ class PFieldNavigator(object):
         self.robot_pose = Pose()
         self.received_pose = False
         self.current_goal = Point()
-       
+
+        self.previousDirection = 1.0 #initalize it to move forward more often
         
         ######################################
         # Setup ROS publishers
@@ -65,10 +66,11 @@ class PFieldNavigator(object):
         # hold up for some messages
         rospy.wait_for_message(ROBOPOSE_TOPIC, Pose)
         rospy.wait_for_message(GOAL_TOPIC, Point)
-        temp_obstacles = [(0, 5)]
+        temp_obstacles = [(1, 4)]
         # work hard doing good stuff
         while not rospy.is_shutdown():
-            if self.received_pose:
+        	#New pose and the beacon is identified
+            if self.received_pose and  not math.isnan(self.robot_pose.position.z):
                 self.received_pose = False
                 # grab current goal and pose information
                 nav_goal = self.current_goal
@@ -76,20 +78,30 @@ class PFieldNavigator(object):
                 print("==============================")
                 print(" **  Goal: \n" + str(nav_goal))
                 print(" ** Position: \n" + str(robot_pose.position))
+
+
                 # Calculate goal force
                 attr_force = self.calc_goal_force(nav_goal, robot_pose)
                 print("Goal force: " + str(attr_force))
                 # Calculate repulsive force
                 repulsive_force = self.calc_repulsive_force(temp_obstacles, robot_pose)
-                # TODO
                 # Get final drive vector (goal, obstacle forces)
-                # TODO
                 # Calculate twist message from drive vector
                 drive_cmd = self.drive_from_force(attr_force, robot_pose)
                 self.drive_pub.publish(drive_cmd)
+
+            #New pose and the beacon is lost
+            elif self.received_pose and math.isnan(self.robot_pose.position.z):
+            	self.received_pose = False
+              	#the beacon is lost, turn search for beacon
+               	cmd = Twist()
+               	cmd.angular.z = 1
+               	self.drive_pub.publish(cmd)
+
             else:
-                # TODO: search for beacon
+            	#No new pose
                 pass
+            
             rate.sleep()
 
     def drive_from_force(self, force, robot_pose):
@@ -98,7 +110,7 @@ class PFieldNavigator(object):
         '''
         cmd = Twist()
         max_angle = math.pi
-        spin_thresh = math.pi 
+        spin_thresh = math.pi /4.0 #I added the / 4.0 to see if it helps the back up
         # get force magnitude
         force_mag = math.hypot(force[0], force[1])
         if force_mag == 0: return cmd
@@ -111,6 +123,19 @@ class PFieldNavigator(object):
         force_angle = math.atan2(force[1], force[0])
         # put force angle in robot space
         force_angle = -1 * (force_angle - (math.pi / 2.0))
+
+        #this is for when the force is behind the robot
+        signed_lin_vel = 0.25  #this number needs to be changed, we don't want it to move forward quickly while turning, so it should be affected by angular velocity
+
+        if abs(force_angle) > math.radians(90 + self.previousDirection*20):#previousDirection math makes it more likly to back up again if it was just backing up
+        	#pi-|angle| gives you the magnitude of the angle
+        	# angle/|angle| will be the sign of the original angle
+        	force_angle = (math.pi - abs(force_angle))*(-1*(force_angle/abs(force_angle)))
+        	signed_lin_vel *= -1.0
+        	self.previousDirection = -1.0
+        else:
+        	self.previousDirection = 1.0
+
         # get difference to robot's current yaw
         angle_diff = self.wrap_angle(force_angle - robot_orient[2])
         print("Robot Yaw: " + str(math.degrees(robot_orient[2])))
@@ -119,7 +144,7 @@ class PFieldNavigator(object):
         print("Angle diff: " + str(math.degrees(angle_diff)))
 
         ang_vel = (angle_diff / max_angle) * ANGULAR_SPEED
-        lin_vel = 0 if abs(angle_diff) >= spin_thresh else 0.25
+        lin_vel = 0 if abs(angle_diff) >= spin_thresh else signed_lin_vel
 
         print("Ang vel: " + str(ang_vel))
         print("Lin Vel: " + str(lin_vel))
