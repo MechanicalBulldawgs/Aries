@@ -15,6 +15,8 @@ CONVEYOR_SPIN = 3  # PWM channel for conveyor spin motor
 CONVEYOR_TILT = 4  # PWM channel for conveyor tilt motor
 ###############
 
+# Everything is -128 to 127
+
 class motor_director(object):
     
     def __init__(self):
