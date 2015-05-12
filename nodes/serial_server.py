@@ -27,7 +27,7 @@ class serial_server(object):
         of touch sensors and the connection to the Arduino"""
 
         port = rospy.get_param("ports/sensor_arduino", "/dev/ttyUSB0")
-        baudrate = rospy.get_param("ports/baudrates/sensor_arduino", 115200)
+        baudrate = rospy.get_param("baudrates/sensor_arduino", 115200)
         print("Connecting to Arduino on port: " + str(port))
         self.arduino = serial.Serial(port, baudrate, timeout = 1)
         print("Connected to Arduino on port: " + str(port))
@@ -42,7 +42,7 @@ class serial_server(object):
             if not self.arduino.inWaiting() > 0:
                 rate.sleep()
                 continue
-            
+            #print("Received data")
             self.parse_data(self.arduino.readline())
             
     def parse_data(self, data):

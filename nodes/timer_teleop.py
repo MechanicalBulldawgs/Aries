@@ -47,17 +47,17 @@ class Duration_Teleop(object):
         global COLLECTOR_TILT, COLLECTOR_TSTOP, COLLECTOR_UNTILT
         try:
             # Constants for hopper
-            HOPPER_DUMP = rospy.get_param("dump_settings/dump_signal")
-            HOPPER_STOP = rospy.get_param("dump_settings/stop_signal")
-            HOPPER_UNDUMP = rospy.get_param("dump_settings/undump_signal")
+            HOPPER_DUMP = int(rospy.get_param("dump_settings/dump_signal"))
+            HOPPER_STOP = int(rospy.get_param("dump_settings/stop_signal"))
+            HOPPER_UNDUMP = int(rospy.get_param("dump_settings/undump_signal"))
             # Constants for conveyor spin
-            COLLECTOR_SPIN = rospy.get_param("collector_settings/spin_signal")
-            COLLECTOR_STOP = rospy.get_param("collector_settings/spin_stop_signal")
-            COLLECTOR_RSPIN = rospy.get_param("collector_settings/unspin_signal")
+            COLLECTOR_SPIN = int(rospy.get_param("collector_settings/spin_signal"))
+            COLLECTOR_STOP = int(rospy.get_param("collector_settings/spin_stop_signal"))
+            COLLECTOR_RSPIN = int(rospy.get_param("collector_settings/unspin_signal"))
             # Constants for conveyor tilt (150 - 600)
-            COLLECTOR_TILT = rospy.get_param("collector_settings/tilt_signal")
-            COLLECTOR_TSTOP = rospy.get_param("collector_settings/tilt_stop_signal")
-            COLLECTOR_UNTILT = rospy.get_param("collector_settings/untilt_signal")
+            COLLECTOR_TILT = int(rospy.get_param("collector_settings/tilt_signal"))
+            COLLECTOR_TSTOP = int(rospy.get_param("collector_settings/tilt_stop_signal"))
+            COLLECTOR_UNTILT = int(rospy.get_param("collector_settings/untilt_signal"))
         except:
             rospy.logerr("Failed to load motor parameters.")
 

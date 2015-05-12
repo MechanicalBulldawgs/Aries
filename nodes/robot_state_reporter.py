@@ -104,7 +104,7 @@ class State_Reporter(object):
             state = "DUMPING"
         else:
             state = "ILLEGAL"
-            rospy.logerr("Hopper Angle: Out of Bounds: " + str(hopper_angle) + ". Hopper may be in dangerous position.")
+            #rospy.logerr("Hopper Angle: Out of Bounds: " + str(hopper_angle) + ". Hopper may be in dangerous position.")
         return state
 
     def get_collector_state(self, collector_angle):
@@ -119,7 +119,7 @@ class State_Reporter(object):
             state =  "DUMPING"
         else:
             state = "ILLEGAL"
-            rospy.logerr("Collector Angle: Out of Bounds: " + str(collector_angle) + ". Collector may be in dangerous position.")
+            #rospy.logerr("Collector Angle: Out of Bounds: " + str(collector_angle) + ". Collector may be in dangerous position.")
 
         return state
 

@@ -6,10 +6,10 @@ dump_settings:
     stop_signal: 0
 collector_settings:
     collector_min_angle: [225, 230]
-    collector_max_angle: [255, 260]
+    collector_max_angle: [75, 80]
     spin_signal: 24
     unspin_signal: -24
     spin_stop_signal: 0
-    tilt_signal: -24
-    untilt_signal: 24
+    tilt_signal: -36
+    untilt_signal: 36
     tilt_stop_signal: 0

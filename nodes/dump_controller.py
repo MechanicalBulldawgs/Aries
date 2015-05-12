@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import rospy
+import rospy, signal 
 from std_msgs.msg import UInt16, Int16, String
 
 '''
@@ -61,6 +61,8 @@ class Dump_Controller(object):
         self.hopper_cmds_pub = rospy.Publisher(hopper_cmds_topic, Int16, queue_size = 10)
         self.collector_tilt_pub = rospy.Publisher(collector_tilt_topic, Int16, queue_size = 10)
 
+        signal.signal(signal.SIGINT, self._signal_handler)
+
     def run(self):
         '''
         '''
@@ -83,32 +85,36 @@ class Dump_Controller(object):
         # Orchestrate dump action
         ##############################
         #tilt collector back
-        while self.collector_angle < self.collector_max[0]:
+        rate = rospy.Rate(10)
+        print("Tilt Collector back")
+        while (self.collector_angle < self.collector_max[0]) and not rospy.is_shutdown():
+            print("tilting...")
             self.publish_collector_tilt_command(self.collector_untilt_signal)
             rate.sleep()
+        print("Stopping Collector")
         #stop collector
         self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
 
-        #dump hopper and wait a few seconds
-        while self.hopper_angle < self.hopper_max[0]:
-            self.publish_hopper_command(self.dump_signal)
-            rate.sleep()
+        # #dump hopper and wait a few seconds
+        # while self.hopper_angle < self.hopper_max[0]:
+        #     self.publish_hopper_command(self.dump_signal)
+        #     rate.sleep()
 
-        rospy.sleep(self.dump_duration)
+        # rospy.sleep(self.dump_duration)
 
-        #put hopper back down
-        while self.hopper_angle > self.hopper_min[0]:
-            self.publish_hopper_command(self.undump_signal)
-            rate.sleep()
-        #stop hopper
-        self.publish_hopper_command(self.hopper_stop_signal)
+        # #put hopper back down
+        # while self.hopper_angle > self.hopper_min[0]:
+        #     self.publish_hopper_command(self.undump_signal)
+        #     rate.sleep()
+        # #stop hopper
+        # self.publish_hopper_command(self.hopper_stop_signal)
 
-        #put collector back towards hopper
-        while self.collector_angle > self.collector_min[0]:
-            self.publish_collector_tilt_command(self.collector_tilt_signal)
-            rate.sleep()
-        #stop collector
-        self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
+        # #put collector back towards hopper
+        # while self.collector_angle > self.collector_min[0]:
+        #     self.publish_collector_tilt_command(self.collector_tilt_signal)
+        #     rate.sleep()
+        # #stop collector
+        # self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
 
     def dump_cmds_callback(self, data):
         '''
@@ -136,7 +142,13 @@ class Dump_Controller(object):
     def publish_collector_tilt_command(self, collector_tilt_command):
         collector_tilt_msg = Int16()
         collector_tilt_msg.data = collector_tilt_command
-        self.collector_tilt_cmds_pub.publish(collector_tilt_msg)
+        self.collector_tilt_pub.publish(collector_tilt_msg)
+
+    def _signal_handler(self, signal, frame):
+        '''
+        Signal handler called when ctrl-c is detected
+        '''
+        exit()
 
 if __name__ == "__main__":
     try:
