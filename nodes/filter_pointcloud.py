@@ -104,7 +104,7 @@ class Filter_PointCloud(object):
         cloud.points = [Point32(x=outY, y=outX, z=0) for outX, outY in zip(x, y)]
 
         # Transforms the point cloud into the /map frame for mapping
-        self.tf.waitForTransform("/laser", "/map", rospy.Time(0), rospy.Duration(4.0))
+        self.tf.waitForTransform("/front_laser", "/map", rospy.Time(0), rospy.Duration(4.0))
         cloud = self.tf.transformPointCloud("/map", cloud)
 
         # Only points with potential obstacles need to be mapped.
@@ -127,7 +127,7 @@ class Filter_PointCloud(object):
         rospy.sleep(5)
         
         # Waits until a transform is available
-        self.tf.waitForTransform("/laser", "/map", rospy.Time(0), rospy.Duration(4.0))
+        self.tf.waitForTransform("/front_laser", "/map", rospy.Time(0), rospy.Duration(4.0))
         
         # Main message processing loop
         while not rospy.is_shutdown():

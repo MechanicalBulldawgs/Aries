@@ -7,6 +7,8 @@ from sensor_msgs.msg import PointCloud
 from MeanShiftCluster import MeanShiftCluster
 import numpy as np
 
+from tf import TransformListener
+
 
 class centroid_of_the_mechanism(object):
     def __init__(self):
@@ -18,17 +20,20 @@ class centroid_of_the_mechanism(object):
         self.cellWidth = int(round(self.mapWidth / self.resolution))
         self.cellHeight = int(round(self.mapHeight / self.resolution))
 
+        self.bandwidth = 10.0
+
         self.pc = PointCloud()
 
         # Creates publisher for filtered point cloud topic
         self._cloud_pub = rospy.Publisher('/aries/obstacle_centroids', PointCloud, queue_size=5)
 
+        self.tf = TransformListener()
         
 
     def handle_localization_pose(self, pose):
-        pose = pose.pose
-
-        bandwidth = 10.0
+        # Transforms the point cloud into the /map frame for mapping
+        self.tf.waitForTransform("/front_laser", "/map", rospy.Time(0), rospy.Duration(4.0))
+        pose = self.tf.transformPose("/map", pose).pose
 
         get_occupancy_map = rospy.ServiceProxy("/aries/get_occupancy_map", aries.srv.occupancy_map)
         occupancyMap = get_occupancy_map("Garbage").map
@@ -53,7 +58,7 @@ class centroid_of_the_mechanism(object):
         dataPts = np.asarray(obstaclePoints).T
 
         try:
-            clustCent, data2cluster, cluster2data = MeanShiftCluster(dataPts, bandwidth, nargout=3)
+            clustCent, data2cluster, cluster2data = MeanShiftCluster(dataPts, self.bandwidth, nargout=3)
         except:
             raise ValueError(
                 "\nxMin: " + str(xMin) +
@@ -68,13 +73,12 @@ class centroid_of_the_mechanism(object):
         self.pc.header.stamp = rospy.Time.now()
         self.pc.header.frame_id = "map"
 
-
         points = []
         for centroid, centroidPoints in zip(clustCent, cluster2data):
             p = Point32()
             p.x = centroid[0] * self.resolution
             p.y = centroid[1] * self.resolution
-            p.z = 0 #np.size(centroidPoints) * self.resolution
+            p.z = np.size(centroidPoints)
             points.append(p)
 
         self.pc.points = points
@@ -84,6 +88,13 @@ class centroid_of_the_mechanism(object):
 
     def run(self):
         r = rospy.Rate(10)
+        # Due to differences in startup time, the node needs to wait or it will raise errors
+        # by calling for tf transforms at times before startup of the tf broadcaster.
+        rospy.sleep(5)
+        
+        # Waits until a transform is available
+        self.tf.waitForTransform("/back_laser", "/map", rospy.Time(0), rospy.Duration(4.0))
+        
 
         print("Waiting for /aries/get_occupancy_map...")
         rospy.wait_for_service("/aries/get_occupancy_map")
@@ -97,6 +108,8 @@ class centroid_of_the_mechanism(object):
 
 
 if __name__ == '__main__':
-
-    centroid_centroid = centroid_of_the_mechanism()
-    centroid_centroid.run()
+    try:
+        centroid_centroid = centroid_of_the_mechanism()
+        centroid_centroid.run()
+    except rospy.ROSInterruptException:
+        print "interrupt"

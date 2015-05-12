@@ -130,7 +130,7 @@ class OccupancyGrid(object):
         alpha = self.alpha
 
         # Transforms the point cloud into the /map frame for mapping
-        self.tf.waitForTransform("laser", "map", rospy.Time(0), rospy.Duration(4.0))
+        self.tf.waitForTransform("front_laser", "map", rospy.Time(0), rospy.Duration(4.0))
         cloud = self.tf.transformPointCloud("map", cloud)
 
         for point in cloud.points:
@@ -147,7 +147,7 @@ class OccupancyGrid(object):
         rospy.sleep(5)
         
         # Waits until a transform is available
-        self.tf.waitForTransform("laser", "map", rospy.Time(0), rospy.Duration(4.0))
+        self.tf.waitForTransform("front_laser", "map", rospy.Time(0), rospy.Duration(4.0))
         
         # Main message processing loop
         while not rospy.is_shutdown():

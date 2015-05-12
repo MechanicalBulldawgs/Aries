@@ -33,7 +33,7 @@ public:
     try
     {
         projector_.transformLaserScanToPointCloud(
-          "laser", *scan_in, cloud, listener_);
+          "front_laser", *scan_in, cloud, listener_);
     }
     catch (tf::TransformException& e)
     {

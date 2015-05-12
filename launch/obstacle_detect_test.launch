@@ -1,13 +1,21 @@
 <launch>
     <rosparam command="load" file="$(find aries)/param/map_params.yaml" />
 
-    <!-- Static transform from laser to base_link -->
+    <!-- Static transform from front_laser to base_link -->
 <!--0.3937 meters from the point under the front lidar to the center of the robot
     0 meters left/right to allign the lidar with the center of the robot
     0.619125 meters from the lidar down to the base of the robot chassis
     1.57079632679 radian pitch angle that the lidar is tilted towards the ground
     0.785398163 radian rotation angle so that the x-axis positive is forward -->
-    <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0.4 0 0.619125 1.57079632679 0.785398163 0 base_link laser 100" />
+    <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0.4 0 0.619125 1.57079632679 0.785398163 0 base_link front_laser 100" />
+
+    <!-- Static transform from back_laser to base_link -->
+<!--0.1016 meters from the point under the front lidar to the center of the robot
+    0.3429 meters right to align the lidar with the center of the robot
+    0.6223 meters from the lidar down to the base of the robot chassis
+    0 radian pitch angle because the coordinates on this frame are parallel with the bot
+    0.785398163 radian rotation angle so that the x-axis positive is forward -->
+    <node pkg="tf" type="static_transform_publisher" name="base_to_back_laser_broadcaster" args="0.1016 0.3429 0.6223 0 0.785398163 0 base_link back_laser 100" />
 
     <!-- For testing only. This will be dynamic later. -->
      <!--<node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="10 0 0 0 0 0 map base_link 100" /> 
