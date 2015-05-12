@@ -1,0 +1,15 @@
+dump_settings:
+    hopper_min_angle: [55, 60]
+    hopper_max_angle: [165, 170]
+    dump_signal: 350
+    undump_signal: 380
+    stop_signal: 370
+collector_settings:
+    collector_min_angle: [230, 235]
+    collector_max_angle: [260, 265]
+    spin_signal: 400
+    unspin_signal: 340
+    spin_stop_signal: 370
+    tilt_signal: 350
+    untilt_signal: 400
+    tilt_stop_signal: 370

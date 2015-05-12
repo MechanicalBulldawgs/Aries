@@ -10,7 +10,7 @@ class hopp_coll_commands(object):
     """Determines the state of the collector, and the hopper."""
 
     def __init__(self):
-
+        # CORRECT CONSTANTS
         #Hopper Angle Constansts
         self.HOPPER_MIN = 55
         self.HOPPER_REST_MAX = 60
