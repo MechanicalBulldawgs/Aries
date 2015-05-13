@@ -2,7 +2,7 @@
 
 import rospy, signal, atexit, math
 from sensor_msgs.msg import LaserScan
-from geometry_msgs.msg import Pose, Point, Quaternion
+from geometry_msgs.msg import PoseStamped, Point, Quaternion
 from tf.transformations import quaternion_from_euler
 
 '''
@@ -85,9 +85,9 @@ class BeaconLocalizer(object):
         rospy.Subscriber(SCAN_TOPIC, LaserScan, self.scan_callback)
 
         self.vis_scan_pub = rospy.Publisher("vis_scan", LaserScan, queue_size = 10)
-        self.pose_pub = rospy.Publisher(ROBOPOSE_TOPIC, Pose, queue_size = 10)
+        self.pose_pub = rospy.Publisher(ROBOPOSE_TOPIC, PoseStamped, queue_size = 10)
 
-        self.current_pose = Pose()
+        self.current_pose = PoseStamped()
         self.current_scan = LaserScan() # current scan message
         self.received_scan = False      # True if we've received a new scan, false if not
 
@@ -220,8 +220,10 @@ class BeaconLocalizer(object):
         else:
             print("~~~ BEACON ~~~")
             print("Failed to find.")
-            pose = Pose()
-            pose.position.z = float('NaN')
+            pose = PoseStamped()
+            pose.header.stamp = rospy.Time.now()
+            pose.header.frame = "back_laser"
+            pose.pose.position.z = float('NaN')
             self.pose_pub.publish(pose)
             return
         
@@ -255,21 +257,23 @@ class BeaconLocalizer(object):
         # Build Pose message and publish
         #################################
         if good_orientation and good_position:
-            pose = Pose()
+            pose = PoseStamped()
+            pose.header.stamp = rospy.Time.now()
+            pose.header.frame = "back_laser"
             # set position
-            pose.position.x = self.robot_location[0]
-            pose.position.y = self.robot_location[1]
-            pose.position.z = 0
+            pose.pose.position.x = self.robot_location[0]
+            pose.pose.position.y = self.robot_location[1]
+            pose.pose.position.z = 0
             # set orientation
             roll = 0
             pitch = 0
-            yaw = robOrient
-            #yaw = globOrient
+            #yaw = robOrient
+            yaw = globOrient
             quat = quaternion_from_euler(roll, pitch, yaw)
-            pose.orientation.x = quat[0]
-            pose.orientation.y = quat[1]
-            pose.orientation.z = quat[2]
-            pose.orientation.w = quat[3]
+            pose.pose.orientation.x = quat[0]
+            pose.pose.orientation.y = quat[1]
+            pose.pose.orientation.z = quat[2]
+            pose.pose.orientation.w = quat[3]
             # update current pose
             self.current_pose = pose 
             # publish pose
