@@ -61,7 +61,7 @@ class serial_server(object):
             self.publish_potentiometers()
         if "ir" in json_str.keys():
             self.ir_data = json_str["ir"]
-            self.publish_ir
+            self.publish_ir()
 
     def publish_imu(self):
         imu_msg = Imu()
@@ -90,7 +90,8 @@ class serial_server(object):
         self.hopper_pub.publish(hopper_msg)
 
     def publish_ir(self):
-        status_msg = Bool(bool(self.ir_data))
+        status_msg = Bool()
+        status_msg.data = bool(self.ir_data)
         self.scoop_safety_pub.publish(status_msg)
 
     def _cleanup(self):
