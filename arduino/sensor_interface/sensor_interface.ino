@@ -12,8 +12,8 @@ bool timer1_flag = false;
 
 
 //Potentiometer Values
-#define POT_HOPPER_PIN A2
-#define POT_COLLECTOR_PIN A3
+#define POT_HOPPER_PIN A6
+#define POT_COLLECTOR_PIN A7
 #define ADC_REF 5 //reference voltage of ADC (V)
 #define GROVE_VCC 5 //VCC of the grove interface (V)
 #define FULL_ANGLE 300 //full value of the rotary angle (degrees)
@@ -21,7 +21,7 @@ int pot_hopper_angle;
 int pot_collector_angle;
 
 //IR Values
-#define IR_PIN 6
+#define IR_PIN 2
 bool ir_triggered = false;
 
 #define MIN_ANGLE 55  //hopper shouldn't return past this point; send stop message
