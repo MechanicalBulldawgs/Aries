@@ -220,6 +220,9 @@ class BeaconLocalizer(object):
         else:
             print("~~~ BEACON ~~~")
             print("Failed to find.")
+            pose = Pose()
+            pose.position.z = float('NaN')
+            self.pose_pub.publish(pose)
             return
         
         ###########################
