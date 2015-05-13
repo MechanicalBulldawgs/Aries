@@ -53,4 +53,6 @@
 	<node pkg="aries" type="dump_controller.py" output="screen" name="dump_controller"/>
 
     <node pkg="aries" type="robot_state_reporter.py" output="screen" name="robot_state_reporter"/>
+
+    <node pkg="aries" type="lidar_pivot_controller.py" output="screen" name="lidar_pivot_controller"/>
 </launch>

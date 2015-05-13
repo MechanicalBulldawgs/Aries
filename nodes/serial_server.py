@@ -84,8 +84,8 @@ class serial_server(object):
         self.imu_pub.publish(imu_msg)
 
     def publish_potentiometers(self):
-        collector_msg = UInt16(self.pot_data["pot_hopper"])
-        hopper_msg = UInt16(self.pot_data["pot_collector"])
+        collector_msg = UInt16(self.pot_data["pot_collector"])
+        hopper_msg = UInt16(self.pot_data["pot_hopper"])
         self.collector_pub.publish(collector_msg)
         self.hopper_pub.publish(hopper_msg)
 
