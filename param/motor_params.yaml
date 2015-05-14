@@ -18,5 +18,5 @@ drive_settings:
     drive_speed: 127    # Speed for driving
     turn_speed: 127     # Speed for turning
     drive_stop: 0
-    mining_drive_speed: 25
-    arc_drive_speed: 30
+    mining_drive_speed: 64
+    arc_drive_speed: 64

@@ -28,6 +28,7 @@ COLLECTOR_UNTILT = 24
 # Drive constants
 DRIVE_SPEED = 40
 DRIVE_STOP = 0
+TURN_SPEED = 40
 MINING_DRIVE_SPEED = 25
 ARC_DRIVE_SPEED = 30
 ###################################
@@ -47,7 +48,7 @@ class Duration_Teleop(object):
         global HOPPER_DUMP, HOPPER_STOP, HOPPER_UNDUMP 
         global COLLECTOR_SPIN, COLLECTOR_STOP, COLLECTOR_RSPIN 
         global COLLECTOR_TILT, COLLECTOR_TSTOP, COLLECTOR_UNTILT
-        global DRIVE_SPEED, DRIVE_STOP, MINING_DRIVE_SPEED, ARC_DRIVE_SPEED
+        global DRIVE_SPEED, DRIVE_STOP, MINING_DRIVE_SPEED, ARC_DRIVE_SPEED, TURN_SPEED
         try:
             # Constants for hopper
             HOPPER_DUMP = int(rospy.get_param("dump_settings/dump_signal"))
@@ -66,6 +67,7 @@ class Duration_Teleop(object):
             DRIVE_STOP = int(rospy.get_param("drive_settings/drive_stop"))
             MINING_DRIVE_SPEED = int(rospy.get_param("drive_settings/mining_drive_speed"))
             ARC_DRIVE_SPEED = int(rospy.get_param("drive_settings/arc_drive_speed"))
+            TURN_SPEED = int(rospy.get_param("drive_settings/turn_speed"))
         except:
             rospy.logerr("Failed to load motor parameters.")
 
@@ -178,13 +180,13 @@ class Duration_Teleop(object):
             self.drive_pub.publish(twist)
         elif cmd == "left":
             twist = Twist()
-            twist.linear.x = DRIVE_SPEED
-            twist.angular.z = -DRIVE_SPEED
+            twist.linear.x = TURN_SPEED
+            twist.angular.z = -TURN_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "right":
             twist = Twist()
-            twist.linear.x = -DRIVE_SPEED
-            twist.angular.z = DRIVE_SPEED
+            twist.linear.x = -TURN_SPEED
+            twist.angular.z = TURN_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "collect":
             collect_cmd = Int16()
