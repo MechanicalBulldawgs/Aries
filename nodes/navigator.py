@@ -54,6 +54,11 @@ class PFieldNavigator(object):
         '''
         self.current_goal = data
 
+    def beacon_lost_callback(self, data):
+        '''
+        Callback for beacon_lost messages
+        '''
+        self.beacon_lost = data.data
 
     def robot_pose_callback(self, data):
         '''
@@ -81,7 +86,6 @@ class PFieldNavigator(object):
                 print("==============================")
                 print(" **  Goal: \n" + str(nav_goal))
                 print(" ** Position: \n" + str(robot_pose.position))
-
 
                 # Calculate goal force
                 attr_force = self.calc_goal_force(nav_goal, robot_pose)
