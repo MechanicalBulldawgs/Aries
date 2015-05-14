@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import rospy, signal, atexit, math
-from geometry_msgs.msg import Twist, Point, Pose
+from geometry_msgs.msg import Twist, Point, PoseStamped, Pose
 from tf.transformations import euler_from_quaternion
-
+from std_msgs.msg import Bool
 '''
 This module is responsible for sending Twist commands to robot.
 Input: Waypoints, Map
@@ -44,14 +44,15 @@ class PFieldNavigator(object):
         ######################################
         # Setup ROS subscibers
         ######################################
-        rospy.Subscriber(ROBOPOSE_TOPIC, Pose, self.robot_pose_callback)
+        rospy.Subscriber(ROBOPOSE_TOPIC, PoseStamped, self.robot_pose_callback)
         rospy.Subscriber(GOAL_TOPIC, Point, self.nav_goal_callback)
-        rospy.Subscriber(BEACON_LOST_TOPIC, self.beacon_lost_callback)
+        rospy.Subscriber(BEACON_LOST_TOPIC, Bool, self.beacon_lost_callback)
 
     def nav_goal_callback(self, data):
         '''
         Callback for navigation goals.
         '''
+        print("Received nav goal: " + str(data))
         self.current_goal = data
 
     def beacon_lost_callback(self, data):
@@ -65,20 +66,20 @@ class PFieldNavigator(object):
         Callback for robot localization pose.
         '''
         self.received_pose = True
-        self.robot_pose = data
+        self.robot_pose = data.pose
 
     def run(self):
         '''
         '''
         rate = rospy.Rate(10)
         # hold up for some messages
-        rospy.wait_for_message(ROBOPOSE_TOPIC, Pose)
+        rospy.wait_for_message(ROBOPOSE_TOPIC, PoseStamped)
         rospy.wait_for_message(GOAL_TOPIC, Point)
-        temp_obstacles = [(1, 4)]
+        temp_obstacles = []
         # work hard doing good stuff
         while not rospy.is_shutdown():
         	#New pose and the beacon is identified
-            if self.received_pose and  not math.isnan(self.robot_pose.position.z):
+            if self.received_pose and not self.beacon_lost:
                 self.received_pose = False
                 # grab current goal and pose information
                 nav_goal = self.current_goal
@@ -97,18 +98,15 @@ class PFieldNavigator(object):
                 drive_cmd = self.drive_from_force(attr_force, robot_pose)
                 self.drive_pub.publish(drive_cmd)
 
-            #New pose and the beacon is lost
-            elif self.received_pose and math.isnan(self.robot_pose.position.z):
-            	self.received_pose = False
-              	#the beacon is lost, turn search for beacon
+            #Beacon lost
+            elif self.beacon_lost:
+                print("Beacon Lost")
+                # the beacon is lost, turn search for beacon
+                #self.received_pose = False
                	cmd = Twist()
                	cmd.angular.z = 1
                	self.drive_pub.publish(cmd)
 
-            else:
-            	#No new pose
-                pass
-            
             rate.sleep()
 
     def drive_from_force(self, force, robot_pose):
@@ -117,7 +115,7 @@ class PFieldNavigator(object):
         '''
         cmd = Twist()
         max_angle = math.pi
-        spin_thresh = math.pi /4.0 #I added the / 4.0 to see if it helps the back up
+        spin_thresh = math.pi / 4.0 #I added the / 4.0 to see if it helps the back up
         # get force magnitude
         force_mag = math.hypot(force[0], force[1])
         if force_mag == 0: return cmd
