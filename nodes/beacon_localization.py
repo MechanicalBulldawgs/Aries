@@ -220,11 +220,11 @@ class BeaconLocalizer(object):
         else:
             print("~~~ BEACON ~~~")
             print("Failed to find.")
-            pose = PoseStamped()
-            pose.header.stamp = rospy.Time.now()
-            pose.header.frame = "back_laser"
-            pose.pose.position.z = float('NaN')
-            self.pose_pub.publish(pose)
+            # pose = PoseStamped()
+            # pose.header.stamp = rospy.Time.now()
+            # pose.header.frame_id = "back_laser"
+            # pose.pose.position.z = float('NaN')
+            # self.pose_pub.publish(pose)
             return
         
         ###########################
@@ -259,7 +259,7 @@ class BeaconLocalizer(object):
         if good_orientation and good_position:
             pose = PoseStamped()
             pose.header.stamp = rospy.Time.now()
-            pose.header.frame = "back_laser"
+            pose.header.frame_id = "back_laser"
             # set position
             pose.pose.position.x = self.robot_location[0]
             pose.pose.position.y = self.robot_location[1]

@@ -32,8 +32,11 @@ class centroid_of_the_mechanism(object):
 
     def handle_localization_pose(self, pose):
         # Transforms the point cloud into the /map frame for mapping
-        self.tf.waitForTransform("/front_laser", "/map", rospy.Time(0), rospy.Duration(4.0))
-        pose = self.tf.transformPose("/map", pose).pose
+        self.tf.waitForTransform("/back_laser", "/map", rospy.Time(0), rospy.Duration(4.0))
+        try:
+            pose = self.tf.transformPose("/map", pose).pose
+        except:
+            return
 
         get_occupancy_map = rospy.ServiceProxy("/aries/get_occupancy_map", aries.srv.occupancy_map)
         occupancyMap = get_occupancy_map("Garbage").map
@@ -52,8 +55,8 @@ class centroid_of_the_mechanism(object):
                 if weight > 0.1:
                     obstaclePoints.append([x,y])
 
-        # if not obstaclePoints:
-        #     return
+        if not obstaclePoints:
+            return
 
         dataPts = np.asarray(obstaclePoints).T
 

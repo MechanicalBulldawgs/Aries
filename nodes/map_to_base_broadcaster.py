@@ -2,9 +2,10 @@
 
 import rospy
 import tf
-from geometry_msgs.msg import Pose
+from geometry_msgs.msg import PoseStamped
 
 def handle_localization_pose(pose):
+    pose = pose.pose
     br = tf.TransformBroadcaster()
     br.sendTransform((pose.position.x + WIDTH, pose.position.y, 0), 
                      (pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w),
@@ -20,5 +21,5 @@ if __name__ == '__main__':
     WIDTH = cellResolution*cellWidth
     
     ROBOPOSE_TOPIC = rospy.get_param("topics/localization_pose", "beacon_localization_pose")
-    rospy.Subscriber(ROBOPOSE_TOPIC, Pose, handle_localization_pose)
+    rospy.Subscriber(ROBOPOSE_TOPIC, PoseStamped, handle_localization_pose)
     rospy.spin()

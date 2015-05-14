@@ -1,4 +1,5 @@
 <launch>
+    <rosparam command="load" file="$(find aries)/param/map_params.yaml" />
 
     <!-- <param name="/use_sim_time" value="true"/> -->
     <!-- Launch hokuyo node; taken from hokuyo launch files -->
@@ -47,12 +48,8 @@
      <!--<node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="10 0 0 0 0 0 map base_link 100" /> 
 -->
 
-    <!-- Broadcaster the actually uses localization data. -->
-    <!-- <node type="map_to_base_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
--->
-
-    <!-- Dynamic test file that moves in a circle to test mapping. -->
-    <node type="mapping_test_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
+    <!-- Broadcaster that actually uses localization data. -->
+    <node type="map_to_base_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
 
     <node type="laserscan_to_pointcloud" pkg="aries" name="laserscan_to_pointcloud"/>
 
@@ -65,5 +62,21 @@
     <node type="beacon_localization.py" pkg="aries" name="beacon_localization" />
 
     <node type="centroid_of_the_mechanism.py" pkg="aries" name="centroid_of_the_mechanism" />
+
+<rosparam command="load" file="$(find aries)/param/ports.yaml" />
+    <rosparam command="load" file="$(find aries)/param/topics.yaml" />
+    <rosparam command="load" file="$(find aries)/param/motor_params.yaml" />
+
+    <node pkg="aries" type="motor_director.py" output="screen" name="motor_director"/>
+
+	<node pkg="aries" type="joystick_controller.py" output="screen" name="joystick_controller"/>
+
+    <node pkg="aries" type="timer_teleop.py" output="screen" name="duration_teleop"/>
+
+    <node pkg="aries" type="dump_controller.py" output="screen" name="dump_controller"/>
+
+    <node pkg="aries" type="robot_state_reporter.py" output="screen" name="robot_state_reporter"/>
+
+    
 
 </launch>
