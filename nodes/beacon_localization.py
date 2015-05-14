@@ -257,7 +257,7 @@ class BeaconLocalizer(object):
         # Build Pose message and publish
         #################################
         if good_orientation and good_position:
-            pose = PoseStamped()
+            pose = PoseStamped() # GLOBAL
             pose.header.stamp = rospy.Time.now()
             pose.header.frame_id = "back_laser"
             # set position
@@ -276,6 +276,7 @@ class BeaconLocalizer(object):
             pose.pose.orientation.w = quat[3]
             # update current pose
             self.current_pose = pose 
+
             # publish pose
             print("Publishing pose.")
             beacon_lost = Bool(False)

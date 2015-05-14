@@ -2,7 +2,7 @@
 
 import rospy, signal, atexit, math
 from geometry_msgs.msg import Twist, Point, PoseStamped, Pose
-from tf.transformations import euler_from_quaternion
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from std_msgs.msg import Bool
 '''
 This module is responsible for sending Twist commands to robot.
@@ -67,8 +67,31 @@ class PFieldNavigator(object):
         Callback for robot localization pose.
         '''
         self.received_pose = True
-        self.robot_pose = data.pose
+        self.robot_pose = self.transform_pose(data.pose)
         #print("current pose: " + str(self.robot_pose))
+
+    def transform_pose(self, pose):
+        '''
+        Given a global pose, transform to local robot pose
+        '''
+        # convert quat orientation to eulers
+        global_orient = euler_from_quaternion([pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]) 
+        
+        roll = global_orient[0]
+        pitch = global_orient[1]
+        yaw = global_orient[2]
+
+        local_yaw = yaw - math.pi / 2
+
+        robot_orient = quaternion_from_euler(roll, pitch, local_yaw)
+
+        local_pose = pose
+        local_pose.orientation.x = robot_orient[0]
+        local_pose.orientation.y = robot_orient[1]
+        local_pose.orientation.z = robot_orient[2]
+        local_pose.orientation.w = robot_orient[3]
+
+        return local_pose
 
     def run(self):
         '''
@@ -95,7 +118,7 @@ class PFieldNavigator(object):
                 attr_force = self.calc_goal_force(nav_goal, robot_pose)
                 print("Goal force: " + str(attr_force))
                 # Calculate repulsive force
-                repulsive_force = self.calc_repulsive_force(temp_obstacles, robot_pose)
+                #repulsive_force = self.calc_repulsive_force(temp_obstacles, robot_pose)
                 # Get final drive vector (goal, obstacle forces)
                 # Calculate twist message from drive vector
                 drive_cmd = self.drive_from_force(attr_force, robot_pose)
@@ -105,10 +128,12 @@ class PFieldNavigator(object):
             elif self.beacon_lost:
                 print("Beacon Lost")
                 # the beacon is lost, turn search for beacon
-                #self.received_pose = False
+                self.received_pose = False
                	cmd = Twist()
                	cmd.angular.z = 1
                	self.drive_pub.publish(cmd)
+            else:
+                pass
 
             rate.sleep()
 
