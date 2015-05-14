@@ -14,6 +14,7 @@ Output: Twist commands
 GOAL_FORCE_CONST = 1.0  # magnitude used when calculating goal force
 ANGULAR_SPEED = 1.0
 LINEAR_SPEED = 1.0
+GOAL_THRESH = 0.05      # radius around goal that it's okay to stop in 
 ######################################
 # Load global topic names from ros params
 ######################################
@@ -21,6 +22,7 @@ DRIVE_TOPIC = rospy.get_param("topics/drive_cmds", "cmd_vel")
 GOAL_TOPIC = rospy.get_param("topics/navigation_goals", "nav_goal")
 ROBOPOSE_TOPIC = rospy.get_param("topics/localization_pose", "beacon_localization_pose")
 BEACON_LOST_TOPIC = rospy.get_param("topics/beacon_lost", "beacon_lost")
+REACHED_GOAL_TOPIC = rospy.get_param("topics/reached_goal", "reached_goal")
 
 class PFieldNavigator(object):
 
@@ -40,6 +42,7 @@ class PFieldNavigator(object):
         # Setup ROS publishers
         ######################################
         self.drive_pub = rospy.Publisher(DRIVE_TOPIC, Twist, queue_size = 10)
+        self.reached_goal_pub = rospy.Publisher(REACHED_GOAL_TOPIC, Bool, queue_size = 10)
 
         ######################################
         # Setup ROS subscibers
@@ -60,7 +63,6 @@ class PFieldNavigator(object):
         Callback for beacon_lost messages
         '''
         self.beacon_lost = data.data
-        #print("beacon lost: " + str(self.beacon_lost))
 
     def robot_pose_callback(self, data):
         '''
@@ -68,7 +70,6 @@ class PFieldNavigator(object):
         '''
         self.received_pose = True
         self.robot_pose = self.transform_pose(data.pose)
-        #print("current pose: " + str(self.robot_pose))
 
     def transform_pose(self, pose):
         '''
@@ -113,6 +114,13 @@ class PFieldNavigator(object):
                 print("Navigating...")
                 print(" **  Goal: \n" + str(nav_goal))
                 print(" ** Position: \n" + str(robot_pose.position))
+                # Check to see if at goal
+                if self.at_goal(robot_pose, nav_goal):
+                    # Robot has made it to goal.
+                    self.reached_goal_pub.publish(Bool(True))
+                else:
+                    # Robot still going towards goal.
+                    self.reached_goal_pub.publish(Bool(False))
 
                 # Calculate goal force
                 attr_force = self.calc_goal_force(nav_goal, robot_pose)
@@ -137,6 +145,16 @@ class PFieldNavigator(object):
 
             rate.sleep()
 
+    def at_goal(self, robot_pose, goal):
+        '''
+        Given a robot_pose and a goal coordinate, this node determines if robot is at the goal 
+        '''
+        # calc distance 
+        dist = math.sqrt((goal.x - robot_pose.position.x)**2 + (goal.y - robot_pose.position.y)**2)
+        at_goal = True if dist <= GOAL_THRESH else False
+        return at_goal
+
+
     def drive_from_force(self, force, robot_pose):
         '''
         Given a force vector, generate Twist message 
@@ -160,10 +178,10 @@ class PFieldNavigator(object):
         #this is for when the force is behind the robot
         signed_lin_vel = 0.25  #this number needs to be changed, we don't want it to move forward quickly while turning, so it should be affected by angular velocity
 
-        if abs(force_angle) > math.radians(90 + self.previousDirection*20):#previousDirection math makes it more likly to back up again if it was just backing up
+        if abs(force_angle) > math.radians(90 + self.previousDirection * 20):#previousDirection math makes it more likly to back up again if it was just backing up
         	#pi-|angle| gives you the magnitude of the angle
         	# angle/|angle| will be the sign of the original angle
-        	force_angle = (math.pi - abs(force_angle))*(-1*(force_angle/abs(force_angle)))
+        	force_angle = (math.pi - abs(force_angle)) * (-1 * (force_angle / abs(force_angle)))
         	signed_lin_vel *= -1.0
         	self.previousDirection = -1.0
         else:
@@ -190,7 +208,6 @@ class PFieldNavigator(object):
         '''
         given a goal point and a robot pose, calculate and return x and y components of goal force
         '''
-        GOAL_THRESH = 0.05 # radius around goal that it's okay to stop in 
         FIELD_SPREAD = 10.0 # radius around goal where pfield is scaled
         ALPHA = 1.0
         # get distance between goal and robot

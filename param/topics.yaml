@@ -14,3 +14,4 @@ topics:
     scoop_safety: scoop_safety                      # ROS Bool msgs, true if scoop safe for driving
     dump_cmds: dump_cmds                            # ROS String msgs, cmds for dump control
     beacon_lost: beacon_lost                        # ROS Bool msgs, true if beacon lost
+    reached_goal: reached_goal                      # ROS Bool msgs, true if robot has navigated to current goal
