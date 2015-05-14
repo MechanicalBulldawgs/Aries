@@ -7,5 +7,6 @@ control_station_comms:
     control_line_port: 20173
     data_line_port: 20172
     status_return_port: 20171
+    buffer_size: 4096
     
 
