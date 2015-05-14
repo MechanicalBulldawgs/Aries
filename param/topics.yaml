@@ -1,5 +1,5 @@
 topics:
-    joystick: joy                                   # ROS Joy msgs
+    joystick: joy                                   # ROS Joy msgs, msgs from controller
     op_mode: operation_mode                         # ROS String msgs
     drive_cmds: cmd_vel                             # ROS Twist msgs
     hopper_cmds: hopper_control                     # ROS Int16 msgs

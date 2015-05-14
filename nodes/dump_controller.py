@@ -68,11 +68,8 @@ class Dump_Controller(object):
         '''
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
-            # Grab current command
-            dump = self.take_dump
             # if dump, dump
-            if dump:
-                self.take_dump = False
+            if self.take_dump:
                 self.dump()
                 
             rate.sleep()
@@ -88,7 +85,7 @@ class Dump_Controller(object):
         rate = rospy.Rate(10)
         print("Tilt Collector back")
         print("Tilt colelctor angle: " + str(self.collector_min))
-        while (self.collector_angle > self.collector_min[0]) and not rospy.is_shutdown():
+        while (self.collector_angle > self.collector_min[0]) and self.take_dump and not rospy.is_shutdown():
             print("tilting...")
             self.publish_collector_tilt_command(self.collector_untilt_signal)
             rate.sleep()
@@ -98,12 +95,16 @@ class Dump_Controller(object):
         # just in case it drops a msg... 
         rospy.sleep(0.05)
         self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
+        
+        if not self.take_dump:
+            self.take_dump = False
+            return
 
         #dump hopper and wait a few seconds
         print("Dumping")
         print("Hopper target: " + str(self.hopper_max))
         print("Hopper angle: " + str(self.hopper_angle))
-        while self.hopper_angle < self.hopper_max[0]:
+        while (self.hopper_angle < self.hopper_max[0]) and self.take_dump and not rospy.is_shutdown():
             self.publish_hopper_command(self.dump_signal)
             rate.sleep()
         print("Done Dumping motion")
@@ -112,12 +113,17 @@ class Dump_Controller(object):
         # just in case it drops a msg...
         rospy.sleep(0.05)
         self.publish_hopper_command(self.hopper_stop_signal)
+
+        if not self.take_dump:
+            self.take_dump = False
+            return
+
         rospy.sleep(self.dump_duration)
 
         #put hopper back down
         print("Putting hopper back down")
         print("hopper target" + str(self.hopper_min))
-        while self.hopper_angle > self.hopper_min[0]:
+        while (self.hopper_angle > self.hopper_min[0]) and self.take_dump and not rospy.is_shutdown():
             self.publish_hopper_command(self.undump_signal)
             rate.sleep()
         print("Done undumping")
@@ -125,10 +131,15 @@ class Dump_Controller(object):
         self.publish_hopper_command(self.hopper_stop_signal)
         rospy.sleep(0.05)
         self.publish_hopper_command(self.hopper_stop_signal)
+
+        if not self.take_dump:
+            self.take_dump = False
+            return
+
         # #put collector back towards hopper
         print("tilt collector back in place")
         print("Tilt target: " + str(self.collector_max))
-        while self.collector_angle < self.collector_max[0]:
+        while (self.collector_angle < self.collector_max[0]) and self.take_dump and not rospy.is_shutdown():
             self.publish_collector_tilt_command(self.collector_tilt_signal)
             rate.sleep()
         #stop collector
@@ -137,12 +148,18 @@ class Dump_Controller(object):
         rospy.sleep(0.05)
         self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
 
+        # Completed dump: Update take_dump variable
+        self.take_dump = False
+
     def dump_cmds_callback(self, data):
         '''
         Callback for dump cmds topic.
         '''
         print("## Received dump command. ##")
-        self.take_dump = True if data.data == "DUMP" else False
+        if data.data == "DUMP":
+            self.take_dump = True
+        elif data.data == "STOP":
+            self.take_dump = False
 
     def hopper_pot_callback(self, data):
         '''

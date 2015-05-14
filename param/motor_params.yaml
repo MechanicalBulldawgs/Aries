@@ -1,15 +1,19 @@
 dump_settings:
     hopper_min_angle: [50, 55]
     hopper_max_angle: [150, 155]
-    dump_signal: -24
-    undump_signal: 24
+    dump_signal: -100
+    undump_signal: 50
     stop_signal: 0
+    dump_duration: 5    # Duration for dump script to keep the hopper in dump position
 collector_settings:
     collector_min_angle: [220, 225] 
     collector_max_angle: [250, 255] 
-    spin_signal: 36
-    unspin_signal: -24
+    spin_signal: 50
+    unspin_signal: -32
     spin_stop_signal: 0
-    tilt_signal: -36
-    untilt_signal: 36
+    tilt_signal: -40
+    untilt_signal: 40
     tilt_stop_signal: 0
+drive_settings:
+    drive_speed: 127    # Speed for driving
+    turn_speed: 127     # Speed for turning

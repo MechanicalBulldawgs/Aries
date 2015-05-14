@@ -40,7 +40,7 @@ class Duration_Teleop(object):
         self.cmd_lock = Lock()      # Lock to protect command variables
         self.new_cmd = False        # Flag set when new message received
         self.current_cmd = None     # Stores current duration command
-
+        # self.valid_cmds = valid_cmds = ["forward", "backward", "left", "right", "collect", "uncollect", "tilt-collector", "untilt-collector", "dump", "undump", "stop", "take-dump"]
         # Load motor values
         global HOPPER_DUMP, HOPPER_STOP, HOPPER_UNDUMP 
         global COLLECTOR_SPIN, COLLECTOR_STOP, COLLECTOR_RSPIN 
@@ -101,6 +101,7 @@ class Duration_Teleop(object):
                 new_cmd = self.new_cmd
                 self.new_cmd = False
                 current_cmd = self.current_cmd if new_cmd else current_cmd
+                # Handle special cases (cases where duration should definitely be set to 0)
                 if current_cmd.cmd == "take-dump": current_cmd.duration = 0
             # if new cmd: interrupt last command (send stops)
             if new_cmd:
@@ -141,6 +142,10 @@ class Duration_Teleop(object):
         drive_stop = Twist()
         drive_stop.linear.x = DRIVE_STOP
         drive_stop.angular.z = DRIVE_STOP
+        # Dump behavior stop
+        dump_cmd = String()
+        dump_cmd.data = "STOP"
+        self.dump_pub.publish(dump_cmd)
         # Publish messages
         self.drive_pub.publish(drive_stop)
         self.hopper_pub.publish(hopper_stop)
@@ -171,14 +176,6 @@ class Duration_Teleop(object):
         elif cmd == "right":
             twist = Twist()
             twist.linear.x = -DRIVE_SPEED
-            twist.angular.z = DRIVE_SPEED
-            self.drive_pub.publish(twist)
-        elif cmd == "0":
-            twist = Twist()
-            twist.linear.x = DRIVE_SPEED
-            self.drive_pub.publish(twist)
-        elif cmd == "1":
-            twist = Twist()
             twist.angular.z = DRIVE_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "collect":
