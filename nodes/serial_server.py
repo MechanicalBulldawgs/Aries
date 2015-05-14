@@ -20,8 +20,8 @@ class serial_server(object):
         rospy.init_node('serial_server')
         IMU = rospy.get_param("topics/imu")
         SCOOP_SAFETY = rospy.get_param("topics/scoop_safety")
-        COLLECTOR_POTENTIOMETER = rospy.get_param("topics/collector_pot")
-        HOPPER_POTENTIOMETER = rospy.get_param("topics/hopper_pot")
+        COLLECTOR_POTENTIOMETER = rospy.get_param("topics/collector_potentiometer")
+        HOPPER_POTENTIOMETER = rospy.get_param("topics/hopper_potentiometer")
 
         self.imu_pub = rospy.Publisher(IMU, Imu, queue_size = 10)
         self.scoop_safety_pub = rospy.Publisher(SCOOP_SAFETY, Bool, queue_size = 10)
