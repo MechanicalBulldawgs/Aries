@@ -20,6 +20,7 @@ LINEAR_SPEED = 1.0
 DRIVE_TOPIC = rospy.get_param("topics/drive_cmds", "cmd_vel")
 GOAL_TOPIC = rospy.get_param("topics/navigation_goals", "nav_goal")
 ROBOPOSE_TOPIC = rospy.get_param("topics/localization_pose", "beacon_localization_pose")
+BEACON_LOST_TOPIC = rospy.get_param("topics/beacon_lost", "beacon_lost")
 
 class PFieldNavigator(object):
 
@@ -31,6 +32,7 @@ class PFieldNavigator(object):
         self.robot_pose = Pose()
         self.received_pose = False
         self.current_goal = Point()
+        self.beacon_lost = True
 
         self.previousDirection = 1.0 #initalize it to move forward more often
         
@@ -44,6 +46,7 @@ class PFieldNavigator(object):
         ######################################
         rospy.Subscriber(ROBOPOSE_TOPIC, Pose, self.robot_pose_callback)
         rospy.Subscriber(GOAL_TOPIC, Point, self.nav_goal_callback)
+        rospy.Subscriber(BEACON_LOST_TOPIC, self.beacon_lost_callback)
 
     def nav_goal_callback(self, data):
         '''

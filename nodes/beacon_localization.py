@@ -4,6 +4,7 @@ import rospy, signal, atexit, math
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 from tf.transformations import quaternion_from_euler
+from std_msgs.msg import Bool
 
 '''
 Proof of concept/sandbox module for trying out different ways to process lidar data.
@@ -75,6 +76,7 @@ class BeaconLocalizer(object):
         LEFT_POST_LOC = (float(loc[0]), float(loc[1]))
         loc = rospy.get_param("beacon_localization/right_post_loc", RIGHT_POST_LOC)
         RIGHT_POST_LOC = (float(loc[0]), float(loc[1]))
+        BEACON_LOST_TOPIC = rospy.get_param("topics/beacon_lost", "beacon_lost")
         ###################################
 
         ###################################
@@ -86,6 +88,7 @@ class BeaconLocalizer(object):
 
         self.vis_scan_pub = rospy.Publisher("vis_scan", LaserScan, queue_size = 10)
         self.pose_pub = rospy.Publisher(ROBOPOSE_TOPIC, PoseStamped, queue_size = 10)
+        self.beacon_lost_pub = rospy.Publisher(BEACON_LOST_TOPIC, Bool, queue_size = 10)
 
         self.current_pose = PoseStamped()
         self.current_scan = LaserScan() # current scan message
@@ -220,11 +223,8 @@ class BeaconLocalizer(object):
         else:
             print("~~~ BEACON ~~~")
             print("Failed to find.")
-            # pose = PoseStamped()
-            # pose.header.stamp = rospy.Time.now()
-            # pose.header.frame_id = "back_laser"
-            # pose.pose.position.z = float('NaN')
-            # self.pose_pub.publish(pose)
+            beacon_lost = Bool(True)
+            self.beacon_lost_pub.publish(beacon_lost)
             return
         
         ###########################
@@ -278,6 +278,8 @@ class BeaconLocalizer(object):
             self.current_pose = pose 
             # publish pose
             print("Publishing pose.")
+            beacon_lost = Bool(False)
+            self.beacon_lost_pub.publish(beacon_lost)
             self.pose_pub.publish(pose)
 
         
