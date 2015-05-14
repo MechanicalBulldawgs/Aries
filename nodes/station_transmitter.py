@@ -25,6 +25,8 @@ class Station_Transmitter(object):
         self.current_mode = None
         ################################################
         ####### Load parameters from param files #######
+        global BUFFER_SIZE
+        BUFFER_SIZE = int(rospy.get_param("control_station_comms/buffer_size"))
         self.ROBOT_IP = rospy.get_param("control_station_comms/robot_ip", None)
         self.CONTROL_LINE_PORT  = int(rospy.get_param("control_station_comms/control_line_port", -1))
         self.DATA_LINE_PORT     = int(rospy.get_param("control_station_comms/data_line_port", -1))

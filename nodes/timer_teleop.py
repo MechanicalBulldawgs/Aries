@@ -28,6 +28,9 @@ COLLECTOR_UNTILT = 24
 # Drive constants
 DRIVE_SPEED = 40
 DRIVE_STOP = 0
+TURN_SPEED = 40
+MINING_DRIVE_SPEED = 25
+ARC_DRIVE_SPEED = 30
 ###################################
 
 class Duration_Teleop(object):
@@ -40,11 +43,12 @@ class Duration_Teleop(object):
         self.cmd_lock = Lock()      # Lock to protect command variables
         self.new_cmd = False        # Flag set when new message received
         self.current_cmd = None     # Stores current duration command
-
+        # self.valid_cmds = valid_cmds = ["forward", "backward", "left", "right", "collect", "uncollect", "tilt-collector", "untilt-collector", "dump", "undump", "stop", "take-dump"]
         # Load motor values
         global HOPPER_DUMP, HOPPER_STOP, HOPPER_UNDUMP 
         global COLLECTOR_SPIN, COLLECTOR_STOP, COLLECTOR_RSPIN 
         global COLLECTOR_TILT, COLLECTOR_TSTOP, COLLECTOR_UNTILT
+        global DRIVE_SPEED, DRIVE_STOP, MINING_DRIVE_SPEED, ARC_DRIVE_SPEED, TURN_SPEED
         try:
             # Constants for hopper
             HOPPER_DUMP = int(rospy.get_param("dump_settings/dump_signal"))
@@ -58,6 +62,12 @@ class Duration_Teleop(object):
             COLLECTOR_TILT = int(rospy.get_param("collector_settings/tilt_signal"))
             COLLECTOR_TSTOP = int(rospy.get_param("collector_settings/tilt_stop_signal"))
             COLLECTOR_UNTILT = int(rospy.get_param("collector_settings/untilt_signal"))
+            # Constants for drive speeds
+            DRIVE_SPEED = int(rospy.get_param("drive_settings/drive_speed"))
+            DRIVE_STOP = int(rospy.get_param("drive_settings/drive_stop"))
+            MINING_DRIVE_SPEED = int(rospy.get_param("drive_settings/mining_drive_speed"))
+            ARC_DRIVE_SPEED = int(rospy.get_param("drive_settings/arc_drive_speed"))
+            TURN_SPEED = int(rospy.get_param("drive_settings/turn_speed"))
         except:
             rospy.logerr("Failed to load motor parameters.")
 
@@ -101,6 +111,7 @@ class Duration_Teleop(object):
                 new_cmd = self.new_cmd
                 self.new_cmd = False
                 current_cmd = self.current_cmd if new_cmd else current_cmd
+                # Handle special cases (cases where duration should definitely be set to 0)
                 if current_cmd.cmd == "take-dump": current_cmd.duration = 0
             # if new cmd: interrupt last command (send stops)
             if new_cmd:
@@ -141,6 +152,10 @@ class Duration_Teleop(object):
         drive_stop = Twist()
         drive_stop.linear.x = DRIVE_STOP
         drive_stop.angular.z = DRIVE_STOP
+        # Dump behavior stop
+        dump_cmd = String()
+        dump_cmd.data = "STOP"
+        self.dump_pub.publish(dump_cmd)
         # Publish messages
         self.drive_pub.publish(drive_stop)
         self.hopper_pub.publish(hopper_stop)
@@ -165,21 +180,13 @@ class Duration_Teleop(object):
             self.drive_pub.publish(twist)
         elif cmd == "left":
             twist = Twist()
-            twist.linear.x = DRIVE_SPEED
-            twist.angular.z = -DRIVE_SPEED
+            twist.linear.x = TURN_SPEED
+            twist.angular.z = -TURN_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "right":
             twist = Twist()
-            twist.linear.x = -DRIVE_SPEED
-            twist.angular.z = DRIVE_SPEED
-            self.drive_pub.publish(twist)
-        elif cmd == "0":
-            twist = Twist()
-            twist.linear.x = DRIVE_SPEED
-            self.drive_pub.publish(twist)
-        elif cmd == "1":
-            twist = Twist()
-            twist.angular.z = DRIVE_SPEED
+            twist.linear.x = -TURN_SPEED
+            twist.angular.z = TURN_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "collect":
             collect_cmd = Int16()
@@ -214,6 +221,42 @@ class Duration_Teleop(object):
             dump_cmd = String()
             dump_cmd.data = "DUMP"
             self.dump_pub.publish(dump_cmd)
+        # Runs the collecter while moving forward at
+        # reduced speed.
+        elif cmd == "mine":
+            twist = Twist()
+            collect_cmd = Int16()
+            collect_cmd.data = COLLECTOR_SPIN
+            twist.linear.x = MINING_DRIVE_SPEED
+            twist.angular.z = MINING_DRIVE_SPEED
+            self.collector_spin_pub.publish(collect_cmd)
+            self.drive_pub.publish(twist)
+        # These will be extraneous if arcade movement
+        # is implemented.
+        # Moves forward in a leftward arc
+        elif cmd == "arc-left":
+            twist = Twist()
+            twist.linear.x = DRIVE_SPEED
+            twist.angular.z = ARC_DRIVE_SPEED
+            self.drive_pub.publish(twist)
+        # Performs the reverse of arc-left
+        elif cmd == "arc-left-rev":
+            twist = Twist()
+            twist.linear.x = -DRIVE_SPEED
+            twist.angular.z = -ARC_DRIVE_SPEED
+            self.drive_pub.publish(twist)
+        # Moves forward in a rightward arc
+        elif cmd == "arc-right":
+            twist = Twist()
+            twist.linear.x = ARC_DRIVE_SPEED
+            twist.angular.z = DRIVE_SPEED
+            self.drive_pub.publish(twist)
+        # Performs the reverse of arc-right
+        elif cmd == "arc-right-rev":
+            twist = Twist()
+            twist.linear.x = -ARC_DRIVE_SPEED
+            twist.angular.z = -DRIVE_SPEED
+            self.drive_pub.publish(twist)
         else:
             # invalid command
             pass
