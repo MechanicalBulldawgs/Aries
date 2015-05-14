@@ -60,6 +60,7 @@ class PFieldNavigator(object):
         Callback for beacon_lost messages
         '''
         self.beacon_lost = data.data
+        #print("beacon lost: " + str(self.beacon_lost))
 
     def robot_pose_callback(self, data):
         '''
@@ -67,6 +68,7 @@ class PFieldNavigator(object):
         '''
         self.received_pose = True
         self.robot_pose = data.pose
+        #print("current pose: " + str(self.robot_pose))
 
     def run(self):
         '''
@@ -85,6 +87,7 @@ class PFieldNavigator(object):
                 nav_goal = self.current_goal
                 robot_pose = self.robot_pose 
                 print("==============================")
+                print("Navigating...")
                 print(" **  Goal: \n" + str(nav_goal))
                 print(" ** Position: \n" + str(robot_pose.position))
 
