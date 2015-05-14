@@ -14,3 +14,12 @@ topics:
     scoop_safety: scoop_safety                      # ROS Bool msgs, true if scoop safe for driving
     dump_cmds: dump_cmds                            # ROS String msgs, cmds for dump control
     beacon_lost: beacon_lost                        # ROS Bool msgs, true if beacon lost
+    imu: imu
+    occupancy_map: /aries/occupancy_map
+    pointcloud: /aries/front_pointcloud
+    filtered_pointcloud: /aries/filtered_front_pointcloud
+    obstacle_centroids: /aries/obstacle_centroids
+    lidar_pivot_control: lidar_pivot_control
+services:
+    get_occupancy_map: /aries/get_occupancy_map
+    get_angle_service:

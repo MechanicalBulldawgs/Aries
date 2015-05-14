@@ -26,7 +26,15 @@ from aries.srv import occupancy_map, occupancy_mapRequest, occupancy_mapResponse
 class OccupancyGrid(object):
     '''
     '''
-    def __init__(self, width, height, resolution, alpha=0.5, origin_x=0, origin_y=0):
+    def __init__(self,
+                width,
+                height,
+                resolution,
+                pointcloud,
+                get_occupancy_map,
+                alpha=0.5,
+                origin_x=0,
+                origin_y=0):
         '''
         Constructor for OccupancyGrid class 
         width: disired width in meters of occupancy grid  (x axis)
@@ -45,12 +53,13 @@ class OccupancyGrid(object):
         rospy.init_node("map_pointcloud")
 
         self.tf = TransformListener()
-
+        
+        
         # Inits the pointcloud Subscriber
-        rospy.Subscriber("/aries/filtered_front_pointcloud", PointCloud, self.pointcloud_callback)
+        rospy.Subscriber(pointcloud, PointCloud, self.pointcloud_callback)
 
         # Initialize service that gets the current angle of the lidar
-        self._service = rospy.Service("/aries/get_occupancy_map", occupancy_map, self.handle_get_occupancy_map)
+        self._service = rospy.Service(get_occupancy_map, occupancy_map, self.handle_get_occupancy_map)
 
         self.width = width 
         self.height = height
@@ -160,5 +169,12 @@ if __name__ == '__main__':
     cellHeight = rospy.get_param("map_params/height")
     cellResolution = rospy.get_param("map_params/resolution")
     learningRate = rospy.get_param("map_params/learningRate")
-    mpc = OccupancyGrid(width=cellWidth, height=cellHeight, resolution=cellResolution, alpha=learningRate)
+    POINTCLOUD = rospy.get_param("topics/filtered_pointcloud")
+    GET_OCCUPANCY_MAP = rospy.get_param("topics/get_occupancy_map")
+    mpc = OccupancyGrid(width=cellWidth,
+                        height=cellHeight,
+                        resolution=cellResolution,
+                        alpha=learningRate.
+                        pointcloud=POINTCLOUD,
+                        get_occupancy_map=GET_OCCUPANCY_MAP)
     mpc.run()

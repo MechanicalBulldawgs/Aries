@@ -29,14 +29,18 @@ class Filter_PointCloud(object):
         # messages. If we buffer those messages we will fall behind
         # and end up processing really old clouds.  Better to just drop
         # old clouds and always work with the most recent available.
-        rospy.Subscriber('/aries/front_pointcloud',
+        POINTCLOUD = rospy.get_param("topics/pointcloud")
+        FILTERED_POINTCLOUD = rospy.get_param("topics/filtered_pointcloud")
+        NUM_STANDARD_DEVIATIONS = rospy.get_param("filter_params/num_std")
+
+        rospy.Subscriber(POINTCLOUD,
                          PointCloud, self.cloud_callback, queue_size=1)
 
         self.current_cloud = PointCloud() # current cloud message
         self.received_cloud = False      # True if we've received a new cloud, false if not
 
         # Creates publisher for filtered point cloud topic
-        self._cloud_pub = rospy.Publisher('/aries/filtered_front_pointcloud', PointCloud, queue_size=10)
+        self._cloud_pub = rospy.Publisher(FILTERED_POINTCLOUD, PointCloud, queue_size=10)
 
 
     def cloud_callback(self, cloud):
@@ -56,7 +60,7 @@ class Filter_PointCloud(object):
         x = np.array([v.y for v in cloud.points])
 
         # Set number of standard deviations to allow coordinates to vary within
-        nStd = 4
+        nStd = NUM_STANDARD_DEVIATIONS
 
         N = len(x)
         stop = False

@@ -16,12 +16,17 @@ class serial_server(object):
         self.gyro_data = {"x":0, "y":0, "z":0}
         self.pot_data = {"pot_hopper":0, "pot_collector":0}
         self.ir_data = 0
-        
+        # PARAMETERS
         rospy.init_node('serial_server')
-        self.imu_pub = rospy.Publisher("imu", Imu, queue_size = 10)
-        self.scoop_safety_pub = rospy.Publisher("scoop_safety", Bool, queue_size = 10)
-        self.collector_pub = rospy.Publisher("collector_pot", UInt16, queue_size = 10)
-        self.hopper_pub = rospy.Publisher("hopper_pot", UInt16, queue_size = 10)
+        IMU = rospy.get_param("topics/imu")
+        SCOOP_SAFETY = rospy.get_param("topics/scoop_safety")
+        COLLECTOR_POTENTIOMETER = rospy.get_param("topics/collector_pot")
+        HOPPER_POTENTIOMETER = rospy.get_param("topics/hopper_pot")
+
+        self.imu_pub = rospy.Publisher(IMU, Imu, queue_size = 10)
+        self.scoop_safety_pub = rospy.Publisher(SCOOP_SAFETY, Bool, queue_size = 10)
+        self.collector_pub = rospy.Publisher(COLLECTOR_POTENTIOMETER, UInt16, queue_size = 10)
+        self.hopper_pub = rospy.Publisher(HOPPER_POTENTIOMETER, UInt16, queue_size = 10)
 
         """Attempt to get parameters from the ROS server and use them to initialize the list 
         of touch sensors and the connection to the Arduino"""

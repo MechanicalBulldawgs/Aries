@@ -20,12 +20,13 @@ class centroid_of_the_mechanism(object):
         self.cellWidth = int(round(self.mapWidth / self.resolution))
         self.cellHeight = int(round(self.mapHeight / self.resolution))
 
+
         self.bandwidth = 10.0
 
         self.pc = PointCloud()
 
         # Creates publisher for filtered point cloud topic
-        self._cloud_pub = rospy.Publisher('/aries/obstacle_centroids', PointCloud, queue_size=5)
+        self._cloud_pub = rospy.Publisher(rospy.get_param("topics/obstacle_centroids"), PointCloud, queue_size=5)
 
         self.tf = TransformListener()
         
@@ -38,7 +39,7 @@ class centroid_of_the_mechanism(object):
         except:
             return
 
-        get_occupancy_map = rospy.ServiceProxy("/aries/get_occupancy_map", aries.srv.occupancy_map)
+        get_occupancy_map = rospy.ServiceProxy(rospy.get_param("services/get_occupancy_map"), aries.srv.occupancy_map)
         occupancyMap = get_occupancy_map("Garbage").map
 
         # pose.position.x += self.mapWidth/2.0

@@ -33,11 +33,13 @@ class lidar_pivot_controller(object):
         self.dyn = USB2Dynamixel_Device(dev_name = dyn_port, baudrate = dyn_baud)
         self.servo = Robotis_Servo(self.dyn, DYNAMIXEL_ID)
 
+        LIDAR_PIVOT_CONTROL = rospy.get_param("topics/lidar_pivot_control")
+        GET_ANGLE_SERVICE = rospy.get_param("services/get_angle_service")
         # Inits the LIDAR Subscriber
-        rospy.Subscriber("lidar_pivot_control", Float32, self.angle_callback)
+        rospy.Subscriber(LIDAR_PIVOT_CONTROL, Float32, self.angle_callback)
 
         # Initialize service that gets the current angle of the lidar
-        self.get_angle_service = rospy.Service("get_lidar_pivot_position", LidarPivotAngle, self.handle_get_lidar_pivot_position)
+        self.get_angle_service = rospy.Service(GET_ANGLE_SERVICE, LidarPivotAngle, self.handle_get_lidar_pivot_position)
 
         # Send servo to default position
         self.servo.move_angle(self.target_angle)
