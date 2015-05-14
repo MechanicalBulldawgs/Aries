@@ -98,7 +98,7 @@ class State_Reporter(object):
         '''
         if self.hopper_min[0] <= hopper_angle <= self.hopper_min[1]: 
             state = "RESTING"
-        elif self.hopper_min[0] < hopper_angle <= self.hopper_max[0]:
+        elif self.hopper_min[1] < hopper_angle <= self.hopper_max[0]:
             state = "TRANSITIONING"
         elif self.hopper_max[0] < hopper_angle <= self.hopper_max[1]:
             state = "DUMPING"
