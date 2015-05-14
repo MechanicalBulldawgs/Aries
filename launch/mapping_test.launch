@@ -1,0 +1,82 @@
+<launch>
+    <rosparam command="load" file="$(find aries)/param/map_params.yaml" />
+
+    <!-- <param name="/use_sim_time" value="true"/> -->
+    <!-- Launch hokuyo node; taken from hokuyo launch files -->
+    <node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
+        <!-- Remap laser scan topic from /scan to /aries/front_scan -->
+
+        <!-- Starts up faster, but timestamps will be inaccurate. --> 
+        <param name="calibrate_time" type="bool" value="false"/> 
+        
+        <!-- Set the port to connect to here -->
+        <param name="port" type="string" value="/dev/ttyACM0"/> 
+        
+        <param name="intensity" type="bool" value="true"/>
+        <param name="min_ang" type="double" value="-0.829"/>
+        <param name="max_ang" type="double" value="0.829"/>
+    </node>
+
+    <param name="robot_description" command="$(find xacro)/xacro.py '$(find sick_tim)/urdf/example.urdf.xacro'" />
+
+    <node name="sick_tim551_2050001" pkg="sick_tim" type="sick_tim551_2050001" respawn="false" output="screen">
+        <!-- Remap laser scan topic from /scan to /aries/front_scan -->
+        <remap from="scan" to="aries/front_scan" />
+
+
+        <param name="min_ang" type="double" value="-0.829"/>
+        <param name="max_ang" type="double" value="0.826"/>
+    </node>
+
+    <!-- Static transform from front_laser to base_link -->
+<!--0.3937 meters from the point under the front lidar to the center of the robot
+    0 meters left/right to align the lidar with the center of the robot
+    0.619125 meters from the lidar down to the base of the robot chassis
+    1.57079632679 radian pitch angle that the lidar is tilted towards the ground
+    0.785398163 radian rotation angle so that the x-axis positive is forward -->
+    <node pkg="tf" type="static_transform_publisher" name="base_to_front_laser_broadcaster" args="0.4 0 0.619125 1.57079632679 0.785398163 0 base_link front_laser 100" />
+
+        <!-- Static transform from back_laser to base_link -->
+<!--0.1016 meters from the point under the front lidar to the center of the robot
+    0.3429 meters right to align the lidar with the center of the robot
+    0.6223 meters from the lidar down to the base of the robot chassis
+    0 radian pitch angle because the coordinates on this frame are parallel with the bot
+    0.785398163 radian rotation angle so that the x-axis positive is forward -->
+    <node pkg="tf" type="static_transform_publisher" name="base_to_back_laser_broadcaster" args="0.1016 0.3429 0.6223 0 0.785398163 0 base_link back_laser 100" />
+
+    <!-- For testing only. This will be dynamic later. -->
+     <!--<node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="10 0 0 0 0 0 map base_link 100" /> 
+-->
+
+    <!-- Broadcaster that actually uses localization data. -->
+    <node type="map_to_base_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
+
+    <node type="laserscan_to_pointcloud" pkg="aries" name="laserscan_to_pointcloud"/>
+
+    <node type="filter_pointcloud.py" pkg="aries" name="filter_pointcloud" />
+
+    <node type="map_pointcloud.py" pkg="aries" name="map_pointcloud" />
+
+    <node type="occupancy_grid_publisher.py" pkg="aries" name="occupancy_grid_publisher" />
+
+    <node type="beacon_localization.py" pkg="aries" name="beacon_localization" />
+
+    <node type="centroid_of_the_mechanism.py" pkg="aries" name="centroid_of_the_mechanism" />
+
+<rosparam command="load" file="$(find aries)/param/ports.yaml" />
+    <rosparam command="load" file="$(find aries)/param/topics.yaml" />
+    <rosparam command="load" file="$(find aries)/param/motor_params.yaml" />
+
+    <node pkg="aries" type="motor_director.py" output="screen" name="motor_director"/>
+
+	<node pkg="aries" type="joystick_controller.py" output="screen" name="joystick_controller"/>
+
+    <node pkg="aries" type="timer_teleop.py" output="screen" name="duration_teleop"/>
+
+    <node pkg="aries" type="dump_controller.py" output="screen" name="dump_controller"/>
+
+    <node pkg="aries" type="robot_state_reporter.py" output="screen" name="robot_state_reporter"/>
+
+    
+
+</launch>

@@ -1,0 +1,39 @@
+<launch>
+    <rosparam command="load" file="$(find aries)/param/map_params.yaml" />
+
+    <!-- Static transform from front_laser to base_link -->
+<!--0.3937 meters from the point under the front lidar to the center of the robot
+    0 meters left/right to allign the lidar with the center of the robot
+    0.619125 meters from the lidar down to the base of the robot chassis
+    1.57079632679 radian pitch angle that the lidar is tilted towards the ground
+    0.785398163 radian rotation angle so that the x-axis positive is forward -->
+    <node pkg="tf" type="static_transform_publisher" name="base_to_laser_broadcaster" args="0.4 0 0.619125 1.57079632679 0.785398163 0 base_link front_laser 100" />
+
+    <!-- Static transform from back_laser to base_link -->
+<!--0.1016 meters from the point under the front lidar to the center of the robot
+    0.3429 meters right to align the lidar with the center of the robot
+    0.6223 meters from the lidar down to the base of the robot chassis
+    0 radian pitch angle because the coordinates on this frame are parallel with the bot
+    0.785398163 radian rotation angle so that the x-axis positive is forward -->
+    <node pkg="tf" type="static_transform_publisher" name="base_to_back_laser_broadcaster" args="0.1016 0.3429 0.6223 0 0.785398163 0 base_link back_laser 100" />
+
+    <!-- For testing only. This will be dynamic later. -->
+     <!--<node pkg="tf" type="static_transform_publisher" name="map_to_base_broadcaster" args="10 0 0 0 0 0 map base_link 100" /> 
+-->
+
+    <!-- Broadcaster the actually uses localization data. -->
+    <!-- <node type="map_to_base_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
+-->
+
+    <!-- Dynamic test file that moves in a circle to test mapping. -->
+    <node type="mapping_test_broadcaster.py" pkg="aries" name="map_to_base_broadcaster" />
+
+    <node type="filter_pointcloud.py" pkg="aries" name="filter_pointcloud" />
+
+    <node type="map_pointcloud.py" pkg="aries" name="map_pointcloud" />
+
+    <node type="occupancy_grid_publisher.py" pkg="aries" name="occupancy_grid_publisher" />
+
+    <node type="centroid_of_the_mechanism.py" pkg="aries" name="centroid_of_the_mechanism" />
+
+</launch>
