@@ -22,4 +22,4 @@ topics:
     lidar_pivot_control: lidar_pivot_control
 services:
     get_occupancy_map: /aries/get_occupancy_map
-    get_angle_service:
+    get_angle_service: /aries/get_angle_service
