@@ -13,3 +13,8 @@ collector_settings:
     tilt_signal: -36
     untilt_signal: 36
     tilt_stop_signal: 0
+drive_settings:
+    drive_speed: 40
+    drive_stop: 0
+    mining_drive_speed: 25
+    arc_drive_speed: 30
