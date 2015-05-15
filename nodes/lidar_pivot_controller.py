@@ -26,7 +26,15 @@ class lidar_pivot_controller(object):
         dyn_port = rospy.get_param("ports/dynamixel", "/dev/ttyUSB1")
         dyn_baud = rospy.get_param("baudrates/dynamixel_baud", 1000000)
 
-        self.target_angle = rospy.get_param("dynamixel_settings/laying_angle", INITIAL_ANGLE)       # Target angle in radians
+         # Load LIDAR Pivot stuff
+        self.PIVOT_LAYDOWN = rospy.get_param("dynamixel_settings/laying_angle", 20)
+        self.PIVOT_STAND = rospy.get_param("dyanmixel_settings/standing_angle", 0)
+        self.PIVOT_MAX = rospy.get_param("dyanimxel_settings/top_limit", 25)
+        self.PIVOT_MIN = rospy.get_param("dynamixel_settings/bottom_limit", -1)
+
+        self.target_angle = self.PIVOT_LAYDOWN
+
+        # Target angle in radians
         self.move_request = False
         dyn_id = rospy.get_param("dynamixel_settings/id", DYNAMIXEL_ID)
         CMDS_TOPIC = rospy.get_param("topics/lidar_pivot_cmds", "lidar_pivot_control")
@@ -57,7 +65,13 @@ class lidar_pivot_controller(object):
     def cmds_callback(self, data):
         '''
         '''
-        pass
+        cmd = data.data
+        if cmd == "STAND":
+            self.move_request = True
+            self.target_angle = math.radians(self.PIVOT_STAND)
+        elif cmd == "LAY-DOWN":
+            self.move_request = True
+            self.target_angle = math.radians(self.PIVOT_LAYDOWN)
 
     def handle_get_lidar_pivot_position(self, req):
         '''
@@ -74,8 +88,8 @@ class lidar_pivot_controller(object):
             # Sends command to move Dynamixel to absolute position.
             if self.move_request: 
                 self.move_request = False
-                self.servo.move_angle(self.target_angle)
-                
+                if math.degrees(self.target_angle) <= self.PIVOT_MAX and math.degrees(self.target_angle) >= self.PIVOT_MIN:
+                    self.servo.move_angle(self.target_angle)
             rate.sleep()    # Keeps ROS from crashing
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-import socket, rospy, cPickle, signal, atexit
+import socket, rospy, cPickle, signal, atexit, math
 import roslib; roslib.load_manifest("aries")
 
 from sensor_msgs.msg import Joy
@@ -105,10 +105,10 @@ class Mode_Selector(object):
                 uinput = uinput.split(" ")
 
                 if uinput[0] == "stand":
-                    angle_cmd.data = 0
+                    angle_cmd.data = math.radians(0)
                     self.lidar_pivot_pub.publish(angle_cmd)
                 elif uinput[0] == "lay-down":
-                    angle_cmd.data = 20
+                    angle_cmd.data = math.radians(20)
                     self.lidar_pivot_pub.publish(angle_cmd)
                 elif uinput[0] == "angle":
                     try:
@@ -117,7 +117,7 @@ class Mode_Selector(object):
                         print("bad input")
                     else:
                         if a >= self.PIVOT_MIN and a <= self.PIVOT_MAX:
-                            angle_cmd.data = a
+                            angle_cmd.data = math.radians(a)
                             self.lidar_pivot_pub.publish(angle_cmd)
                         else:
                             print("Angle out of range")
