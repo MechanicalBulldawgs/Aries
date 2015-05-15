@@ -19,16 +19,26 @@ class Autonomy_State_Machine(object):
 		
 		self.hopper_state = None
 		
+		self.startComplete = False
+		self.navBinComplete = False
+		self.miningComplete = False
+		self.navMiningComplete = False
+		
+		self.transitionTime = 0
+		self.reached_goal = False
+		
 		self.dumpStatePublishedFlag = True
 		self.dumpTime = 0
 		
 		# Load topics
 		hopper_state_topic = rospy.get_param("topics/hopper_state", "hopper_state")
 		dump_cmds_topic = rospy.get_param("topics/dump_cmds", "dump_cmds")
+		REACHED_GOAL_TOPIC = rospy.get_param("topics/reached_goal", "reached_goal")
 		
 		
 		# Setup subscriptions
 		rospy.Subscriber(hopper_state_topic, self.hopper_state_callback)
+		rospy.Subscriber(REACHED_GOAL_TOPIC, Bool, self.reached_goal_callback)
 		
 		# Setup publishers
 		self.dump_pub = rospy.Publisher(dump_topic, String, queue_size = 10)
@@ -112,15 +122,26 @@ class Autonomy_State_Machine(object):
 		STATE: DUMP 
 		- Trans Condition: Dump complete -> NAV MINING STATE 
 		'''
+		if (time.time() < (self.transitionTime - 1)):
+			#we do not want to accidentally skip a state because of something not updating quickly enough
+			return
 		
 		if self.current_state == stateStart:
-			pass
+			if self.startComplete:
+				self.current_state = stateNavMining
+				self.startComplete = False
 		elif self.current_state == stateNavMining:
-			pass
+			if self.navMiningComplete:
+				self.current_state = stateMine
+				self.navMiningComplete = False
 		elif self.current_state == stateMine:
-			pass
+			if self.miningComplete:
+				self.current_state = stateNavBin
+				self.miningComplete = False
 		elif self.current_state == stateNavBin:
-			pass
+			if self.navBinComplete:
+				self.current_state = stateDump
+				self.navBinComplete = False
 		elif self.current_state == stateDump:
 			#when leaving the dump state make self.dumpStatePublishedFlag = False
 			if self.hopper_state == "RESTING":
@@ -130,6 +151,9 @@ class Autonomy_State_Machine(object):
 			
 	def hopper_state_callback(self, state):
 		self.hopper_state = state
+		
+	def reached_goal_callback(self, data):
+		self.reached_goal
 		
 
 if __name__ == "__main__":
