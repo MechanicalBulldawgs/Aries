@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import antigravity, time
+from geometry_msgs.msg import Point
 
 #state constants
 stateStart = 0
@@ -27,6 +28,8 @@ class Autonomy_State_Machine(object):
 		self.transitionTime = 0
 		self.reached_goal = False
 		
+		self.waypointsMined = 0
+		
 		self.dumpStatePublishedFlag = True
 		self.dumpTime = 0
 		
@@ -34,6 +37,8 @@ class Autonomy_State_Machine(object):
 		hopper_state_topic = rospy.get_param("topics/hopper_state", "hopper_state")
 		dump_cmds_topic = rospy.get_param("topics/dump_cmds", "dump_cmds")
 		REACHED_GOAL_TOPIC = rospy.get_param("topics/reached_goal", "reached_goal")
+		mining_waypoints = rospy.get_param("waypoints/mining", "mining")
+		GOAL_TOPIC = rospy.get_param("topics/navigation_goals", "nav_goal")
 		
 		
 		# Setup subscriptions
@@ -42,6 +47,7 @@ class Autonomy_State_Machine(object):
 		
 		# Setup publishers
 		self.dump_pub = rospy.Publisher(dump_topic, String, queue_size = 10)
+		self.goal_pub = rospy.Publisher(GOAL_TOPIC, Point, queue_size = 10)
 		
 		self.current_state = stateStart
 
@@ -86,7 +92,17 @@ class Autonomy_State_Machine(object):
 		'''
 		This state is responsible for mining dirt.  The robot will mine X number of waypoints in this state.
 		'''
-		pass
+		numWaypoints = 3
+		if self.reached_goal:
+			if self.waypointsMined < numWaypoints:
+				goal_point = Point()
+				goal_point.x = mining_waypoints[self.waypointsMined][0]
+				goal_point.z = mining_waypoints[self.waypointsMined][1]
+				goal_point.x = 0
+				self.waypointsMined += 1
+				self.goal_pub.publish(goal_point)
+			else:
+				self.miningComplete = True
 
 	def nav_bin_state(self):
 		'''
@@ -137,6 +153,7 @@ class Autonomy_State_Machine(object):
 		elif self.current_state == stateMine:
 			if self.miningComplete:
 				self.current_state = stateNavBin
+				self.waypointsMined = 0
 				self.miningComplete = False
 		elif self.current_state == stateNavBin:
 			if self.navBinComplete:
@@ -153,7 +170,7 @@ class Autonomy_State_Machine(object):
 		self.hopper_state = state
 		
 	def reached_goal_callback(self, data):
-		self.reached_goal
+		self.reached_goal = data
 		
 
 if __name__ == "__main__":
