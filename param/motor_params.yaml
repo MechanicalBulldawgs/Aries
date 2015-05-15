@@ -22,7 +22,7 @@ drive_settings:
     arc_drive_speed: 7
 dynamixel_settings:
     id: 1
-    laying_angle: 0 # angle dynamixel is at when laying (init angle)       
-    standing_angle: 5 # angle of dynamixel when standing (degrees)
-    top_limit: 20
-    
+    laying_angle: 22# angle dynamixel is at when laying level (init angle)       
+    standing_angle: 0 # angle of dynamixel when standing (degrees)
+    top_limit: 29 # angle when fully lowered towards the front
+    bottom_limit: -3 # angle when fully rotated towards the back
