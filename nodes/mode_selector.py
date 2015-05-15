@@ -49,7 +49,6 @@ class Mode_Selector(object):
         '''
         '''
         rate = rospy.Rate(10)
-
         # publish default mode
         rospy.sleep(0.1)
         default_msg = String()
@@ -57,7 +56,6 @@ class Mode_Selector(object):
         self.mode_pub.publish(default_msg)
 
         while not rospy.is_shutdown():
-
             if self.current_mode == "duration_teleop":
                 # duration teleoperation mode
                 print("===== Command Menu: =====")

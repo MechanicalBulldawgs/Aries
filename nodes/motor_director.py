@@ -7,7 +7,7 @@ from mbedrpc import *
 from threading import Lock
 from collections import deque
 from geometry_msgs.msg import Twist
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16, UInt16
 from byteclass import *
 
 # Everything is -128 to 127
@@ -30,18 +30,19 @@ class motor_director(object):
         self.hopper = RPCVariable(self.mbed, "Hopper")
         self.collector_spin = RPCVariable(self.mbed, "Collector")
         self.collector_tilt = RPCVariable(self.mbed, "CollectorAngle")
-        self.test = RPCVariable(self.mbed, "test")
 
         # Load topic names
         drive_topic               = rospy.get_param("topics/drive_cmds", "cmd_vel")
         hopper_cmds_topic         = rospy.get_param("topics/hopper_cmds", "hopper_control")
         collector_spin_cmds_topic = rospy.get_param("topics/collector_spin_cmds", "collector_spin_control")
         collector_tilt_cmds_topic = rospy.get_param("topics/collector_tilt_cmds", "collector_tilt_control")
+        
         # Setup ROS subscribers
         rospy.Subscriber(drive_topic, Twist, self.cmd_vel_cb)
         rospy.Subscriber(hopper_cmds_topic, Int16, self.dump_callback)
         rospy.Subscriber(collector_spin_cmds_topic, Int16, self.collector_spin_callback)
         rospy.Subscriber(collector_tilt_cmds_topic, Int16, self.collector_tilt_callback)
+
 
         signal.signal(signal.SIGINT, self._signal_handler)
         atexit.register(self._exit_handler)
