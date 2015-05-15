@@ -177,7 +177,7 @@ class PFieldNavigator(object):
         force_angle = -1 * (force_angle - (math.pi / 2.0))
 
         #this is for when the force is behind the robot
-        signed_lin_vel = 0.25  #this number needs to be changed, we don't want it to move forward quickly while turning, so it should be affected by angular velocity
+        signed_lin_vel = LINEAR_SPEED  #this number needs to be changed, we don't want it to move forward quickly while turning, so it should be affected by angular velocity
 
         if abs(force_angle) > math.radians(90 + self.previousDirection * 20):#previousDirection math makes it more likly to back up again if it was just backing up
         	#pi-|angle| gives you the magnitude of the angle
@@ -196,7 +196,7 @@ class PFieldNavigator(object):
         print("Angle diff: " + str(math.degrees(angle_diff)))
 
         ang_vel = (angle_diff / max_angle) * ANGULAR_SPEED
-        lin_vel = 0 if abs(angle_diff) >= spin_thresh else LINEAR_SPEED
+        lin_vel = 0 if abs(angle_diff) >= spin_thresh else signed_lin_vel
 
         vel = self._transform_for_ryan(ang_vel, lin_vel)
 
