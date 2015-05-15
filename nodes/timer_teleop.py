@@ -26,11 +26,11 @@ COLLECTOR_TILT = -24
 COLLECTOR_TSTOP = 0
 COLLECTOR_UNTILT = 24
 # Drive constants
-DRIVE_SPEED = 40
+DRIVE_SPEED = 7
 DRIVE_STOP = 0
-TURN_SPEED = 40
-MINING_DRIVE_SPEED = 25
-ARC_DRIVE_SPEED = 30
+TURN_SPEED = 7
+MINING_DRIVE_SPEED = 7
+ARC_DRIVE_SPEED = 7
 ###################################
 
 class Duration_Teleop(object):
@@ -119,6 +119,10 @@ class Duration_Teleop(object):
                 active = True
                 # Send stops
                 self.robot_stop()
+                # Dump behavior stop
+                dump_cmd = String()
+                dump_cmd.data = "STOP"
+                self.dump_pub.publish(dump_cmd)
                 # Get start time for new command
                 start_time = rospy.get_time()
                 # Issue new command
@@ -152,10 +156,6 @@ class Duration_Teleop(object):
         drive_stop = Twist()
         drive_stop.linear.x = DRIVE_STOP
         drive_stop.angular.z = DRIVE_STOP
-        # Dump behavior stop
-        dump_cmd = String()
-        dump_cmd.data = "STOP"
-        self.dump_pub.publish(dump_cmd)
         # Publish messages
         self.drive_pub.publish(drive_stop)
         self.hopper_pub.publish(hopper_stop)
@@ -171,21 +171,21 @@ class Duration_Teleop(object):
         if cmd == "forward":
             twist = Twist()
             twist.linear.x = DRIVE_SPEED
-            twist.angular.z = DRIVE_SPEED
+            #twist.angular.z = DRIVE_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "backward":
             twist = Twist()
             twist.linear.x = -DRIVE_SPEED
-            twist.angular.z = -DRIVE_SPEED
+            #twist.angular.z = -DRIVE_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "left":
             twist = Twist()
-            twist.linear.x = TURN_SPEED
+            #twist.linear.x = TURN_SPEED
             twist.angular.z = -TURN_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "right":
             twist = Twist()
-            twist.linear.x = -TURN_SPEED
+            #twist.linear.x = -TURN_SPEED
             twist.angular.z = TURN_SPEED
             self.drive_pub.publish(twist)
         elif cmd == "collect":
@@ -217,6 +217,10 @@ class Duration_Teleop(object):
             self.hopper_pub.publish(dump_cmd)
         elif cmd == "stop":
             self.robot_stop()
+            # Dump behavior stop
+            dump_cmd = String()
+            dump_cmd.data = "STOP"
+            self.dump_pub.publish(dump_cmd)
         elif cmd == "take-dump":
             dump_cmd = String()
             dump_cmd.data = "DUMP"

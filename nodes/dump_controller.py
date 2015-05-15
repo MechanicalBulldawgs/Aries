@@ -155,11 +155,12 @@ class Dump_Controller(object):
         '''
         Callback for dump cmds topic.
         '''
+        print("Received DUMP CONTROL COMMAND: " + str(data.data))
         if data.data == "DUMP":
             self.take_dump = True
         elif data.data == "STOP":
-            self.take_dump = False
-
+            #self.take_dump = False
+            pass
     def hopper_pot_callback(self, data):
         '''
         Callback function for hopper potentiometer data

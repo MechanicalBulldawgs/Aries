@@ -8,6 +8,7 @@ from threading import Lock
 from collections import deque
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Int16
+from byteclass import *
 
 # Everything is -128 to 127
 
@@ -25,11 +26,11 @@ class motor_director(object):
         print("Connected to mbed on port: " + str(port))
 
         # mbed variables (motor control)
-        self.linear_velocity = RPCVariable(self.mbed, "LinearVelocity") # left
-        self.angular_velocity = RPCVariable(self.mbed, "Angle") # right
+        self.mbed_twist = RPCVariable(self.mbed, "Twist")
         self.hopper = RPCVariable(self.mbed, "Hopper")
         self.collector_spin = RPCVariable(self.mbed, "Collector")
         self.collector_tilt = RPCVariable(self.mbed, "CollectorAngle")
+        self.test = RPCVariable(self.mbed, "test")
 
         # Load topic names
         drive_topic               = rospy.get_param("topics/drive_cmds", "cmd_vel")
@@ -55,11 +56,46 @@ class motor_director(object):
         '''
         Command velocity callback.  
         '''
-        # TODO: check range of values between -128, 127
+        # Convert twist commands to something Ryan's mbed and read
         print("Writing LV: " + str(int(data.linear.x)))
-        self.linear_velocity.write(int(data.linear.x))
         print("Writing AZ: " + str(int(data.angular.z)))
-        self.angular_velocity.write(int(data.angular.z))
+        msg = int(self._twist_to_ryan(data))
+        # bytething = Byte(msg)
+        # print("Test: " + str(self.test.read()))
+        # print("MSG: " + str(bytething.binary()))
+        self.mbed_twist.write(msg)
+        # print("Test: " + str(self.test.read()))
+
+    def _twist_to_ryan(self, twist):
+        '''
+        Given twist message, convert to single byte for ryan's mbed
+        '''
+        x = int(twist.linear.x)
+        y = int(twist.angular.z)
+        out=int('0x00',16);
+        #test for negative
+        if x<0:
+            #make positve 
+            temp = (-1)*x
+            #set the 4th bit
+            temp = temp | (1<<3)
+            #shift to most significant nibble
+            out = temp<<4
+        else:
+            #shift to mostsegnificant nibble
+            out = x<<4
+
+        if y<0:
+            #make positve
+            temp = (-1)*y
+            #set the 4th bit
+            temp = temp | (1<<3)
+            #place in least signifcant nibble
+            out= out|temp
+        else:
+            #place into least signifcant nibble
+            out=out|y
+        return out
 
     def dump_callback(self, data):
         print("Writing Hopper: " + str(int(data.data)))
