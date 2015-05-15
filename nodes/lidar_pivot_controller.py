@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import roslib; roslib.load_manifest('aries')
-import rospy
+import rospy, math
 from  lib_robotis import USB2Dynamixel_Device, Robotis_Servo
 from math import *
 from std_msgs.msg import Float32, String
