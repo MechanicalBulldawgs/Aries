@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import antigravity, time
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, Pose
 
 #state constants
 stateStart = 0
@@ -27,23 +27,35 @@ class Autonomy_State_Machine(object):
 		
 		self.transitionTime = 0
 		self.reached_goal = False
-		
+		self.robot_pose = Pose()
+		self.navMiningFlag = True
 		self.waypointsMined = 0
-		
+		self.mineStart = False
+		self.navBinFlag = True
 		self.dumpStatePublishedFlag = True
 		self.dumpTime = 0
+		
+		#Load parameters
+		mining_waypoints = rospy.get_param("waypoints/mining", "mining")
+		mining_area = rospy.get_param("waypoints/mining_area", "mining_area")
+		bin_waypoint = rospy.get_param("waypoints/bin", "bin")
+		COLLECTOR_SPIN = int(rospy.get_param("collector_settings/spin_signal"))
+		COLLECTOR_STOP = int(rospy.get_param("collector_settings/spin_stop_signal"))
 		
 		# Load topics
 		hopper_state_topic = rospy.get_param("topics/hopper_state", "hopper_state")
 		dump_cmds_topic = rospy.get_param("topics/dump_cmds", "dump_cmds")
 		REACHED_GOAL_TOPIC = rospy.get_param("topics/reached_goal", "reached_goal")
-		mining_waypoints = rospy.get_param("waypoints/mining", "mining")
 		GOAL_TOPIC = rospy.get_param("topics/navigation_goals", "nav_goal")
+		ROBOPOSE_TOPIC = rospy.get_param("topics/localization_pose", "beacon_localization_pose")
+		
+
 		
 		
 		# Setup subscriptions
 		rospy.Subscriber(hopper_state_topic, self.hopper_state_callback)
 		rospy.Subscriber(REACHED_GOAL_TOPIC, Bool, self.reached_goal_callback)
+		rospy.Subscriber(ROBOPOSE_TOPIC, PoseStamped, self.robot_pose_callback)
 		
 		# Setup publishers
 		self.dump_pub = rospy.Publisher(dump_topic, String, queue_size = 10)
@@ -86,30 +98,58 @@ class Autonomy_State_Machine(object):
 		'''
 		This state is responsible for navigating to the mining area.
 		'''
-		pass
+		if mining_area[1] <= self.robot_pose.position.y:
+			self.navMiningComplete = True
+		elif: self.navMiningFlag:
+				self.navMiningFlag = False
+				goal_point = Point()
+				goal_point.x = mining_waypoints[0][0]
+				goal_point.y = mining_waypoints[0][1]
+				goal_point.z = 0
+			
 
 	def mine_state(self):
 		'''
 		This state is responsible for mining dirt.  The robot will mine X number of waypoints in this state.
 		'''
 		numWaypoints = 3
+		
+		if not self.mineStart:
+			collect_cmd = Int16()
+			collect_cmd.data = COLLECTOR_SPIN
+			self.collector_spin_pub.publish(collect_cmd)
+			self.mineStart = True
+		
 		if self.reached_goal:
 			if self.waypointsMined < numWaypoints:
 				goal_point = Point()
 				goal_point.x = mining_waypoints[self.waypointsMined][0]
-				goal_point.z = mining_waypoints[self.waypointsMined][1]
-				goal_point.x = 0
+				goal_point.y = mining_waypoints[self.waypointsMined][1]
+				goal_point.z = 0
 				self.waypointsMined += 1
 				self.goal_pub.publish(goal_point)
 			else:
 				self.miningComplete = True
+				self.mineStart = False
+				collect_cmd = Int16()
+				collect_cmd.data = COLLECTOR_STOP
+				self.collector_spin_pub.publish(collect_cmd)
 
 	def nav_bin_state(self):
 		'''
 		This state is responsible for navigating to the collection bin (backwards).
 		Also ensuring the robot is close enough to collection bin for dumping.
 		'''
-		pass
+		if self.navBinFlag:
+			goal_point = Point()
+			goal_point.x = bin_waypoint[self.waypointsMined][0]
+			goal_point.y = bin_waypoint[self.waypointsMined][1]
+			goal_point.z = bin_waypoint[self.waypointsMined][2]
+			self.goal_pub.publish(goal_point)
+			self.navBinFlag = False
+		elif self.reached_goal:
+			self.navBinComplete = True
+			self.navBinFlag = True
 
 	def dump_state(self):
 		'''
@@ -150,6 +190,7 @@ class Autonomy_State_Machine(object):
 			if self.navMiningComplete:
 				self.current_state = stateMine
 				self.navMiningComplete = False
+				self.navMiningFlag = True
 		elif self.current_state == stateMine:
 			if self.miningComplete:
 				self.current_state = stateNavBin
@@ -172,6 +213,8 @@ class Autonomy_State_Machine(object):
 	def reached_goal_callback(self, data):
 		self.reached_goal = data
 		
+	def robot_pose_callback(self, data):
+		self.robot_pose = self.transform_pose(data.pose)
 
 if __name__ == "__main__":
 	try:
