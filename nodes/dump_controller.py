@@ -155,7 +155,6 @@ class Dump_Controller(object):
         '''
         Callback for dump cmds topic.
         '''
-        print("## Received dump command. ##")
         if data.data == "DUMP":
             self.take_dump = True
         elif data.data == "STOP":

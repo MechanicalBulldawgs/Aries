@@ -101,7 +101,7 @@ class Duration_Teleop(object):
         '''
         '''
         rospy.wait_for_message(self.cmds_topic, DurationCmd)
-        rate = rospy.Rate(5)
+        rate = rospy.Rate(10)
         current_cmd = None
         active = False
         start_time = 0 #rospy.get_time() -> get current time in float seconds

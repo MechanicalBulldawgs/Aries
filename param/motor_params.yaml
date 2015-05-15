@@ -20,3 +20,8 @@ drive_settings:
     drive_stop: 0
     mining_drive_speed: 64
     arc_drive_speed: 64
+dynamixel_settings:
+    id: 1
+    laying_angle: 0 # angle dynamixel is at when laying (init angle)
+    standing_angle: 0 # angle of dynamixel when standing
+    

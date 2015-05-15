@@ -15,3 +15,6 @@ topics:
     dump_cmds: dump_cmds                            # ROS String msgs, cmds for dump control
     beacon_lost: beacon_lost                        # ROS Bool msgs, true if beacon lost
     reached_goal: reached_goal                      # ROS Bool msgs, true if robot has navigated to current goal
+    lidar_pivot_cmds: lidar_pivot_control           # ROS Float32 msgs, cmds (angles in radians) for lidar pivot servo
+services:
+    lidar_pivot_position: get_lidar_pivot_position  # ROS service for getting lidar pivot position
