@@ -11,10 +11,11 @@ Output: Twist commands
 '''
 ######################################
 # Global constants
-GOAL_FORCE_CONST = 1.0  # magnitude used when calculating goal force
-ANGULAR_SPEED = 1.0
-LINEAR_SPEED = 1.0
-GOAL_THRESH = 0.05      # radius around goal that it's okay to stop in 
+GOAL_FORCE_CONST    = 1.0  # magnitude used when calculating goal force
+ANGULAR_SPEED       = 7.0
+LINEAR_SPEED        = 7.0
+RYAN_CONSTANT       = 7
+GOAL_THRESH         = 0.1       # radius around goal that it's okay to stop in 
 ######################################
 # Load global topic names from ros params
 ######################################
@@ -195,14 +196,28 @@ class PFieldNavigator(object):
         print("Angle diff: " + str(math.degrees(angle_diff)))
 
         ang_vel = (angle_diff / max_angle) * ANGULAR_SPEED
-        lin_vel = 0 if abs(angle_diff) >= spin_thresh else signed_lin_vel
+        lin_vel = 0 if abs(angle_diff) >= spin_thresh else LINEAR_SPEED
 
-        print("Ang vel: " + str(ang_vel))
-        print("Lin Vel: " + str(lin_vel))
-        cmd.angular.z = ang_vel
-        cmd.linear.x = lin_vel
+        vel = self._transform_for_ryan(ang_vel, lin_vel)
+
+        print("Ang vel: " + str(vel[0]))
+        print("Lin Vel: " + str(vel[1]))
+        cmd.angular.z = vel[0]
+        cmd.linear.x = vel[1]
 
         return cmd
+
+    def _transform_for_ryan(self, ang_vel, lin_vel):
+        '''
+        Given angular velocity and linear velocity, transform for ryan (-7, 7)
+        Contact: Ryan Smith, (228) 623 - 9492
+        '''
+        # Normalize, then multiply by seven
+        mag = math.sqrt(ang_vel**2 + lin_vel**2)
+        ang_vel /= mag
+        lin_vel /= mag
+        return [ang_vel * RYAN_CONSTANT, lin_vel * RYAN_CONSTANT]
+
 
     def calc_goal_force(self, nav_goal, robot_pose):
         '''
