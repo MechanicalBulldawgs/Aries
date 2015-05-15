@@ -30,13 +30,15 @@ class lidar_pivot_controller(object):
         self.move_request = False
         dyn_id = rospy.get_param("dynamixel_settings/id", DYNAMIXEL_ID)
         CMDS_TOPIC = rospy.get_param("topics/lidar_pivot_cmds", "lidar_pivot_control")
+        TARGET_ANGLE_TOPIC = rospy.get_param("topics/lidar_pivot_target_angles", "lidar_pivot_target_angles")
         POS_SERV = rospy.get_param("services/lidar_pivot_position", "get_lidar_pivot_position")
         # Servo Motor Setup
         self.dyn = USB2Dynamixel_Device(dev_name = dyn_port, baudrate = dyn_baud)
         self.servo = Robotis_Servo(self.dyn, dyn_id)
 
         # Inits the LIDAR pivot controller Subscriber
-        rospy.Subscriber(CMDS_TOPIC, Float32, self.angle_callback)
+        rospy.Subscriber(TARGET_ANGLE_TOPIC, Float32, self.angle_callback)
+        rospy.Subscriber(CMDS_TOPIC, String, self.cmds_callback)
 
         # Initialize service that gets the current angle of the lidar
         self.get_angle_service = rospy.Service(POS_SERV, LidarPivotAngle, self.handle_get_lidar_pivot_position)
@@ -52,6 +54,10 @@ class lidar_pivot_controller(object):
         self.target_angle = angle.data
         self.move_request = True
 
+    def cmds_callback(self, data):
+        '''
+        '''
+        pass
 
     def handle_get_lidar_pivot_position(self, req):
         '''
