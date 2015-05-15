@@ -3,6 +3,14 @@
 	<rosparam command="load" file="$(find aries)/param/localization.yaml" />
     <rosparam command="load" file="$(find aries)/param/topics.yaml" />
 
+    
 	<node pkg="stage_ros" type="stageros" name="stageros" args="$(find aries)/worlds/mining_field.world" respawn="false" output="screen" />
-	
+ 
+	<!-- Keyboard teleop
+    <node pkg="turtlebot_teleop" type="turtlebot_teleop_key" name="turtlebot_teleop_keyboard"  output="screen">
+        <param name="scale_linear" value="0.5" type="double"/>
+        <param name="scale_angular" value="1.5" type="double"/>
+        <remap from="turtlebot_teleop_keyboard/cmd_vel" to="cmd_vel"/>
+    </node> -->
+
 </launch>

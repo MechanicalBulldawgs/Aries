@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import rospy, signal, atexit, math
-from geometry_msgs.msg import Twist, Point, Pose
-from tf.transformations import euler_from_quaternion
-
+from geometry_msgs.msg import Twist, Point, PoseStamped, Pose
+from tf.transformations import euler_from_quaternion, quaternion_from_euler
+from std_msgs.msg import Bool
 '''
 This module is responsible for sending Twist commands to robot.
 Input: Waypoints, Map
@@ -14,12 +14,15 @@ Output: Twist commands
 GOAL_FORCE_CONST = 1.0  # magnitude used when calculating goal force
 ANGULAR_SPEED = 1.0
 LINEAR_SPEED = 1.0
+GOAL_THRESH = 0.05      # radius around goal that it's okay to stop in 
 ######################################
 # Load global topic names from ros params
 ######################################
 DRIVE_TOPIC = rospy.get_param("topics/drive_cmds", "cmd_vel")
 GOAL_TOPIC = rospy.get_param("topics/navigation_goals", "nav_goal")
 ROBOPOSE_TOPIC = rospy.get_param("topics/localization_pose", "beacon_localization_pose")
+BEACON_LOST_TOPIC = rospy.get_param("topics/beacon_lost", "beacon_lost")
+REACHED_GOAL_TOPIC = rospy.get_param("topics/reached_goal", "reached_goal")
 
 class PFieldNavigator(object):
 
@@ -31,66 +34,126 @@ class PFieldNavigator(object):
         self.robot_pose = Pose()
         self.received_pose = False
         self.current_goal = Point()
-       
+        self.beacon_lost = True
+
+        self.previousDirection = 1.0 #initalize it to move forward more often
         
         ######################################
         # Setup ROS publishers
         ######################################
         self.drive_pub = rospy.Publisher(DRIVE_TOPIC, Twist, queue_size = 10)
+        self.reached_goal_pub = rospy.Publisher(REACHED_GOAL_TOPIC, Bool, queue_size = 10)
 
         ######################################
         # Setup ROS subscibers
         ######################################
-        rospy.Subscriber(ROBOPOSE_TOPIC, Pose, self.robot_pose_callback)
+        rospy.Subscriber(ROBOPOSE_TOPIC, PoseStamped, self.robot_pose_callback)
         rospy.Subscriber(GOAL_TOPIC, Point, self.nav_goal_callback)
+        rospy.Subscriber(BEACON_LOST_TOPIC, Bool, self.beacon_lost_callback)
 
     def nav_goal_callback(self, data):
         '''
         Callback for navigation goals.
         '''
+        print("Received nav goal: " + str(data))
         self.current_goal = data
 
+    def beacon_lost_callback(self, data):
+        '''
+        Callback for beacon_lost messages
+        '''
+        self.beacon_lost = data.data
 
     def robot_pose_callback(self, data):
         '''
         Callback for robot localization pose.
         '''
         self.received_pose = True
-        self.robot_pose = data
+        self.robot_pose = self.transform_pose(data.pose)
+
+    def transform_pose(self, pose):
+        '''
+        Given a global pose, transform to local robot pose
+        '''
+        # convert quat orientation to eulers
+        global_orient = euler_from_quaternion([pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w]) 
+        
+        roll = global_orient[0]
+        pitch = global_orient[1]
+        yaw = global_orient[2]
+
+        local_yaw = yaw - math.pi / 2
+
+        robot_orient = quaternion_from_euler(roll, pitch, local_yaw)
+
+        local_pose = pose
+        local_pose.orientation.x = robot_orient[0]
+        local_pose.orientation.y = robot_orient[1]
+        local_pose.orientation.z = robot_orient[2]
+        local_pose.orientation.w = robot_orient[3]
+
+        return local_pose
 
     def run(self):
         '''
         '''
         rate = rospy.Rate(10)
         # hold up for some messages
-        rospy.wait_for_message(ROBOPOSE_TOPIC, Pose)
+        rospy.wait_for_message(ROBOPOSE_TOPIC, PoseStamped)
         rospy.wait_for_message(GOAL_TOPIC, Point)
-        temp_obstacles = [(0, 5)]
+        temp_obstacles = []
         # work hard doing good stuff
         while not rospy.is_shutdown():
-            if self.received_pose:
+        	#New pose and the beacon is identified
+            if self.received_pose and not self.beacon_lost:
                 self.received_pose = False
                 # grab current goal and pose information
                 nav_goal = self.current_goal
                 robot_pose = self.robot_pose 
                 print("==============================")
+                print("Navigating...")
                 print(" **  Goal: \n" + str(nav_goal))
                 print(" ** Position: \n" + str(robot_pose.position))
+                # Check to see if at goal
+                if self.at_goal(robot_pose, nav_goal):
+                    # Robot has made it to goal.
+                    self.reached_goal_pub.publish(Bool(True))
+                else:
+                    # Robot still going towards goal.
+                    self.reached_goal_pub.publish(Bool(False))
+
                 # Calculate goal force
                 attr_force = self.calc_goal_force(nav_goal, robot_pose)
                 print("Goal force: " + str(attr_force))
                 # Calculate repulsive force
-                repulsive_force = self.calc_repulsive_force(temp_obstacles, robot_pose)
-                # TODO
+                #repulsive_force = self.calc_repulsive_force(temp_obstacles, robot_pose)
                 # Get final drive vector (goal, obstacle forces)
-                # TODO
                 # Calculate twist message from drive vector
                 drive_cmd = self.drive_from_force(attr_force, robot_pose)
                 self.drive_pub.publish(drive_cmd)
+
+            #Beacon lost
+            elif self.beacon_lost:
+                print("Beacon Lost")
+                # the beacon is lost, turn search for beacon
+                self.received_pose = False
+               	cmd = Twist()
+               	cmd.angular.z = 1
+               	self.drive_pub.publish(cmd)
             else:
-                # TODO: search for beacon
                 pass
+
             rate.sleep()
+
+    def at_goal(self, robot_pose, goal):
+        '''
+        Given a robot_pose and a goal coordinate, this node determines if robot is at the goal 
+        '''
+        # calc distance 
+        dist = math.sqrt((goal.x - robot_pose.position.x)**2 + (goal.y - robot_pose.position.y)**2)
+        at_goal = True if dist <= GOAL_THRESH else False
+        return at_goal
+
 
     def drive_from_force(self, force, robot_pose):
         '''
@@ -98,7 +161,7 @@ class PFieldNavigator(object):
         '''
         cmd = Twist()
         max_angle = math.pi
-        spin_thresh = math.pi 
+        spin_thresh = math.pi / 4.0 #I added the / 4.0 to see if it helps the back up
         # get force magnitude
         force_mag = math.hypot(force[0], force[1])
         if force_mag == 0: return cmd
@@ -111,6 +174,19 @@ class PFieldNavigator(object):
         force_angle = math.atan2(force[1], force[0])
         # put force angle in robot space
         force_angle = -1 * (force_angle - (math.pi / 2.0))
+
+        #this is for when the force is behind the robot
+        signed_lin_vel = 0.25  #this number needs to be changed, we don't want it to move forward quickly while turning, so it should be affected by angular velocity
+
+        if abs(force_angle) > math.radians(90 + self.previousDirection * 20):#previousDirection math makes it more likly to back up again if it was just backing up
+        	#pi-|angle| gives you the magnitude of the angle
+        	# angle/|angle| will be the sign of the original angle
+        	force_angle = (math.pi - abs(force_angle)) * (-1 * (force_angle / abs(force_angle)))
+        	signed_lin_vel *= -1.0
+        	self.previousDirection = -1.0
+        else:
+        	self.previousDirection = 1.0
+
         # get difference to robot's current yaw
         angle_diff = self.wrap_angle(force_angle - robot_orient[2])
         print("Robot Yaw: " + str(math.degrees(robot_orient[2])))
@@ -119,7 +195,7 @@ class PFieldNavigator(object):
         print("Angle diff: " + str(math.degrees(angle_diff)))
 
         ang_vel = (angle_diff / max_angle) * ANGULAR_SPEED
-        lin_vel = 0 if abs(angle_diff) >= spin_thresh else 0.25
+        lin_vel = 0 if abs(angle_diff) >= spin_thresh else signed_lin_vel
 
         print("Ang vel: " + str(ang_vel))
         print("Lin Vel: " + str(lin_vel))
@@ -132,7 +208,6 @@ class PFieldNavigator(object):
         '''
         given a goal point and a robot pose, calculate and return x and y components of goal force
         '''
-        GOAL_THRESH = 0.05 # radius around goal that it's okay to stop in 
         FIELD_SPREAD = 10.0 # radius around goal where pfield is scaled
         ALPHA = 1.0
         # get distance between goal and robot

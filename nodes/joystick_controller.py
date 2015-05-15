@@ -26,18 +26,18 @@ JOY_CSPIN_BTTN = CONTROLLER_BUTTONS["A"]
 JOY_CRSPIN_BTTN = CONTROLLER_BUTTONS["B"]
 JOY_CTILT_BTTN = CONTROLLER_BUTTONS["X"]
 JOY_CUTILT_BTTN = CONTROLLER_BUTTONS["Y"]
-# Constants for hopper (150 - 600)
-HOPPER_DUMP = 320  # value to send when dumping
-HOPPER_STOP = 370  # value to send when stopping hopper
-HOPPER_UNDUMP = 420 # value to send when returning to resting state
-# Constants for conveyor spin (150 - 600)
-COLLECTOR_SPIN = 320
-COLLECTOR_STOP = 370
-COLLECTOR_RSPIN = 420
-# Constants for conveyor tilt (150 - 600)
-COLLECTOR_TILT = 340
-COLLECTOR_TSTOP = 370
-COLLECTOR_UNTILT = 400
+# Constants for hopper 
+HOPPER_DUMP = -24  # value to send when dumping
+HOPPER_STOP = 0  # value to send when stopping hopper
+HOPPER_UNDUMP = 24 # value to send when returning to resting state
+# Constants for conveyor spin 
+COLLECTOR_SPIN = 24
+COLLECTOR_STOP = 0
+COLLECTOR_RSPIN = -24
+# Constants for conveyor tilt 
+COLLECTOR_TILT = -24
+COLLECTOR_TSTOP = 0
+COLLECTOR_UNTILT = 24
 ###################################
 
 class Joystick_Controller(object):
@@ -57,7 +57,27 @@ class Joystick_Controller(object):
         self.hopper_cmd = None          # Stores current hoppy command
         self.collector_cmd = None       # Stores current collector spin command
         self.collector_tilt = None      # Stores current collector tilt command
-        self.joy_received = False       
+        self.joy_received = False  
+
+        # Load motor parameters
+        global HOPPER_DUMP, HOPPER_STOP, HOPPER_UNDUMP 
+        global COLLECTOR_SPIN, COLLECTOR_STOP, COLLECTOR_RSPIN 
+        global COLLECTOR_TILT, COLLECTOR_TSTOP, COLLECTOR_UNTILT
+        try:
+            # Constants for hopper
+            HOPPER_DUMP = rospy.get_param("dump_settings/dump_signal")
+            HOPPER_STOP = rospy.get_param("dump_settings/stop_signal")
+            HOPPER_UNDUMP = rospy.get_param("dump_settings/undump_signal")
+            # Constants for conveyor spin
+            COLLECTOR_SPIN = rospy.get_param("collector_settings/spin_signal")
+            COLLECTOR_STOP = rospy.get_param("collector_settings/spin_stop_signal")
+            COLLECTOR_RSPIN = rospy.get_param("collector_settings/unspin_signal")
+            # Constants for conveyor tilt (150 - 600)
+            COLLECTOR_TILT = rospy.get_param("collector_settings/tilt_signal")
+            COLLECTOR_TSTOP = rospy.get_param("collector_settings/tilt_stop_signal")
+            COLLECTOR_UNTILT = rospy.get_param("collector_settings/untilt_signal")
+        except:
+            rospy.logerr("Failed to load motor parameters.")     
 
         # Load topic names
         self.joystick_topic       = rospy.get_param("topics/joystick", "joy")

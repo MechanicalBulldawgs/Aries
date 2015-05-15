@@ -1,13 +1,58 @@
 <launch>
 	<!-- Used to launch control station software --> 
-
+    
 	<rosparam command="load" file="$(find aries)/param/ports.yaml" />
     <rosparam command="load" file="$(find aries)/param/topics.yaml" />
+    <rosparam command="load" file="$(find aries)/param/motor_params.yaml" />   
+    
+    <!-- Launch SICK LIDAR -->
+    <node name="sick_tim551_2050001" pkg="sick_tim" type="sick_tim551_2050001" respawn="false" output="screen">
+        <!-- default values: -->
+        <!--
+          <param name="min_ang" type="double" value="-2.35619449019" />
+          <param name="max_ang" type="double" value="2.35619449019" />
+          <param name="intensity" type="bool" value="True" />
+          <param name="skip" type="int" value="0" />
+          <param name="frame_id" type="str" value="laser" />
+          <param name="time_offset" type="double" value="-0.001" />
+          <param name="publish_datagram" type="bool" value="False" />
+          <param name="subscribe_datagram" type="bool" value="false" />
+          <param name="time_increment" type="double" value="0.000061722" />
+          <param name="range_min" type="double" value="0.05" />
+          <param name="range_max" type="double" value="10.0" />
+        -->
+
+        <!-- Enables TCP instead of USB connection; `hostname` is the host name or IP address of the laser scanner
+             <param name="hostname" type="string" value="192.168.1.43" />
+             <param name="port" type="string" value="2112" />
+        -->
+    </node>
+        
+    <!-- Launch hokuyo LIDAR -->
+    <node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
+      
+        <!-- Starts up faster, but timestamps will be inaccurate. --> 
+        <param name="calibrate_time" type="bool" value="false"/> 
+        
+        <!-- Set the port to connect to here -->
+        <param name="port" type="string" value="/dev/ttyACM0"/> 
+      
+        <param name="intensity" type="bool" value="false"/>
+    </node>
 
 	<node pkg="aries" type="motor_director.py" output="screen" name="motor_director"/>
+
 	<node pkg="aries" type="joystick_controller.py" output="screen" name="joystick_controller"/>
+
     <node pkg="aries" type="timer_teleop.py" output="screen" name="duration_teleop"/>
+
 	<node pkg="aries" type="station_receiver.py" output="screen" name="station_receiver"/>
+
+    <node pkg="aries" type="serial_server.py" output="screen" name="serial_server"/>
 	
-	
+	<node pkg="aries" type="dump_controller.py" output="screen" name="dump_controller"/>
+
+    <node pkg="aries" type="robot_state_reporter.py" output="screen" name="robot_state_reporter"/>
+
+    <node pkg="aries" type="lidar_pivot_controller.py" output="screen" name="lidar_pivot_controller"/>
 </launch>

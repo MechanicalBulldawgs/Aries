@@ -5,8 +5,7 @@
 import rospy, tf, serial, atexit, json
 from sensor_msgs.msg import Imu
 from geometry_msgs.msg import Quaternion
-from std_msgs.msg import Bool
-from std_msgs.msg import UInt16
+from std_msgs.msg import Bool, UInt16
 
 
 class serial_server(object):
@@ -15,21 +14,22 @@ class serial_server(object):
     def __init__(self):
         self.accel_data = {"x":0, "y":0, "z":0, "pitch":0, "roll":0}
         self.gyro_data = {"x":0, "y":0, "z":0}
-        self.pot_data = {"pot1":0, "pot2":0}
+        self.pot_data = {"pot_hopper":0, "pot_collector":0}
         self.ir_data = 0
         
         rospy.init_node('serial_server')
         self.imu_pub = rospy.Publisher("imu", Imu, queue_size = 10)
-        self.scoop_safety_pub = rospy.Publisher("scoop_safe", Bool, queue_size = 10)
+        self.scoop_safety_pub = rospy.Publisher("scoop_safety", Bool, queue_size = 10)
         self.collector_pub = rospy.Publisher("collector_pot", UInt16, queue_size = 10)
         self.hopper_pub = rospy.Publisher("hopper_pot", UInt16, queue_size = 10)
 
         """Attempt to get parameters from the ROS server and use them to initialize the list 
         of touch sensors and the connection to the Arduino"""
 
-        port = rospy.get_param('ports/sensor_arduino', '/dev/ttyUSB0')#ACM0')
+        port = rospy.get_param("ports/sensor_arduino", "/dev/ttyUSB0")
+        baudrate = rospy.get_param("baudrates/sensor_arduino", 115200)
         print("Connecting to Arduino on port: " + str(port))
-        self.arduino = serial.Serial(port, 9600, timeout = 1)
+        self.arduino = serial.Serial(port, baudrate, timeout = 1)
         print("Connected to Arduino on port: " + str(port))
         atexit.register(self._cleanup)
 
@@ -42,7 +42,7 @@ class serial_server(object):
             if not self.arduino.inWaiting() > 0:
                 rate.sleep()
                 continue
-            
+            #print("Received data")
             self.parse_data(self.arduino.readline())
             
     def parse_data(self, data):
@@ -61,7 +61,7 @@ class serial_server(object):
             self.publish_potentiometers()
         if "ir" in json_str.keys():
             self.ir_data = json_str["ir"]
-            self.publish_ir
+            self.publish_ir()
 
     def publish_imu(self):
         imu_msg = Imu()
@@ -84,13 +84,14 @@ class serial_server(object):
         self.imu_pub.publish(imu_msg)
 
     def publish_potentiometers(self):
-        collector_msg = UInt16(self.pot_data["pot_hopper"])
-        hopper_msg = UInt16(self.pot_data["pot_collector"])
+        collector_msg = UInt16(self.pot_data["pot_collector"])
+        hopper_msg = UInt16(self.pot_data["pot_hopper"])
         self.collector_pub.publish(collector_msg)
         self.hopper_pub.publish(hopper_msg)
 
     def publish_ir(self):
-        status_msg = Bool(bool(self.ir_data))
+        status_msg = Bool()
+        status_msg.data = bool(self.ir_data)
         self.scoop_safety_pub.publish(status_msg)
 
     def _cleanup(self):

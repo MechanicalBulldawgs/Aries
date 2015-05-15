@@ -1,0 +1,28 @@
+dump_settings:
+    hopper_min_angle: [50, 55]
+    hopper_max_angle: [150, 155]
+    dump_signal: -50  #-100
+    undump_signal: 50
+    stop_signal: 0
+    dump_duration: 5    # Duration for dump script to keep the hopper in dump position
+collector_settings:
+    collector_min_angle: [220, 225] 
+    collector_max_angle: [250, 255] 
+    spin_signal: 50
+    unspin_signal: -32
+    spin_stop_signal: 0
+    tilt_signal: -40
+    untilt_signal: 40
+    tilt_stop_signal: 0
+drive_settings:
+    drive_speed: 7    # Speed for driving
+    turn_speed: 7     # Speed for turning
+    drive_stop: 0
+    mining_drive_speed: 7
+    arc_drive_speed: 7
+dynamixel_settings:
+    id: 1
+    laying_angle: 22        # angle dynamixel is at when laying level (init angle)       
+    standing_angle: 0       # angle of dynamixel when standing (degrees)
+    top_limit: 29           # angle when fully lowered towards the front
+    bottom_limit: -3        # angle when fully rotated towards the back

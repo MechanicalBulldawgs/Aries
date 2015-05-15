@@ -2,36 +2,35 @@
 
 """This node interfaces with an Arduino to control motors """
 
-import rospy, serial, atexit
+import rospy, serial, atexit, signal
+from mbedrpc import *
 from threading import Lock
 from collections import deque
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Int16
+from byteclass import *
 
-###############
-# Constants (TODO: parameter files)
-HOPPER_CONTROL = 2 # PWM channel for hopper control
-CONVEYOR_SPIN = 3  # PWM channel for conveyor spin motor
-CONVEYOR_TILT = 4  # PWM channel for conveyor tilt motor
-###############
+# Everything is -128 to 127
 
 class motor_director(object):
     
     def __init__(self):
         
         rospy.init_node('motor_director')
-        self.cmd_queue = deque() # python's 'deck' data structure.  Used to store queue of commands received from callbacks to be handled.
-        self.queue_lock = Lock()
-        self.prev_cmds = {"HOPPER":None, "LINEARX":None, "ANGULARZ":None, "CONVEYOR_SPIN":None, "CONVEYOR_TILT":None}
-
+        
         """Attempt to get parameters from the ROS server and use them to initialize the list 
             of touch sensors and the connection to the Arduino"""
-        baudrate = rospy.get_param("ports/baudrates/motor_arduino", 115200)
-        baudrate = int(baudrate)
-        port = "/dev/ttyUSB0"#rospy.get_param('ports/motor_arduino', '/dev/ttyACM0')
-        print("Connecting to Arduino on port: " + str(port))
-        self.arduino = serial.Serial(port, baudrate, timeout = 1)
-        print("Connected to Arduino on port: " + str(port))
+        baudrate = rospy.get_param("baudrates/mbed", 115200)
+        port = rospy.get_param('ports/mbed', '/dev/ttyACM0')
+        self.mbed = SerialRPC(port, baudrate)
+        print("Connected to mbed on port: " + str(port))
+
+        # mbed variables (motor control)
+        self.mbed_twist = RPCVariable(self.mbed, "Twist")
+        self.hopper = RPCVariable(self.mbed, "Hopper")
+        self.collector_spin = RPCVariable(self.mbed, "Collector")
+        self.collector_tilt = RPCVariable(self.mbed, "CollectorAngle")
+        self.test = RPCVariable(self.mbed, "test")
 
         # Load topic names
         drive_topic               = rospy.get_param("topics/drive_cmds", "cmd_vel")
@@ -44,60 +43,78 @@ class motor_director(object):
         rospy.Subscriber(collector_spin_cmds_topic, Int16, self.collector_spin_callback)
         rospy.Subscriber(collector_tilt_cmds_topic, Int16, self.collector_tilt_callback)
 
+        signal.signal(signal.SIGINT, self._signal_handler)
         atexit.register(self._exit_handler)
 
     def run(self):
         '''
         This function processes cmds in cmd queue
         '''
-        rate = rospy.Rate(10)
-        while not rospy.is_shutdown():
-            with self.queue_lock:
-                if len(self.cmd_queue) > 0:
-                    cmd = self.cmd_queue.pop()
-                    print("Sending: " + str(cmd))
-                    self.arduino.write(str(cmd))
-            rate.sleep()
+        rospy.spin()
 
     def cmd_vel_cb(self, data):
         '''
         Command velocity callback.  
         '''
-        linear_cmd = "0:" + str(float(int(data.linear.x))) + "\n"
-        angular_cmd = "1:" + str(float(int(data.angular.z))) + "\n"        
-        with self.queue_lock:
-            if self.prev_cmds["LINEARX"] != float(int(data.linear.x)):
-                self.prev_cmds["LINEARX"] = float(int(data.linear.x))
-                self.cmd_queue.appendleft(linear_cmd)
-            
-            if self.prev_cmds["ANGULARZ"] != float(int(data.angular.z)):
-                self.prev_cmds["ANGULARZ"] = float(int(data.angular.z))
-                self.cmd_queue.appendleft(angular_cmd)
+        # Convert twist commands to something Ryan's mbed and read
+        print("Writing LV: " + str(int(data.linear.x)))
+        print("Writing AZ: " + str(int(data.angular.z)))
+        msg = int(self._twist_to_ryan(data))
+        # bytething = Byte(msg)
+        # print("Test: " + str(self.test.read()))
+        # print("MSG: " + str(bytething.binary()))
+        self.mbed_twist.write(msg)
+        # print("Test: " + str(self.test.read()))
+
+    def _twist_to_ryan(self, twist):
+        '''
+        Given twist message, convert to single byte for ryan's mbed
+        '''
+        x = int(twist.linear.x)
+        y = int(twist.angular.z)
+        out=int('0x00',16);
+        #test for negative
+        if x<0:
+            #make positve 
+            temp = (-1)*x
+            #set the 4th bit
+            temp = temp | (1<<3)
+            #shift to most significant nibble
+            out = temp<<4
+        else:
+            #shift to mostsegnificant nibble
+            out = x<<4
+
+        if y<0:
+            #make positve
+            temp = (-1)*y
+            #set the 4th bit
+            temp = temp | (1<<3)
+            #place in least signifcant nibble
+            out= out|temp
+        else:
+            #place into least signifcant nibble
+            out=out|y
+        return out
 
     def dump_callback(self, data):
-        cmd = str(HOPPER_CONTROL) + ":" + str(data.data) + "\n"
-        with self.queue_lock:
-            if self.prev_cmds["HOPPER"] != data.data:
-                self.prev_cmds["HOPPER"] = data.data
-                self.cmd_queue.appendleft(cmd)
+        print("Writing Hopper: " + str(int(data.data)))
+        self.hopper.write(int(data.data))
 
     def collector_spin_callback(self, data):
-        cmd = str(CONVEYOR_SPIN) + ":" + str(data.data) + "\n"
-        with self.queue_lock:
-            if self.prev_cmds["CONVEYOR_SPIN"] != data.data:
-                self.prev_cmds["CONVEYOR_SPIN"] = data.data
-                self.cmd_queue.appendleft(cmd)
+        print("Writing Collector Spin: " + str(int(data.data)))
+        self.collector_spin.write(int(data.data))
 
     def collector_tilt_callback(self, data):
-        cmd = str(CONVEYOR_TILT) + ":" + str(data.data) + "\n"
-        with self.queue_lock:
-            if self.prev_cmds["CONVEYOR_TILT"] != data.data:
-                self.prev_cmds["CONVEYOR_TILT"] = data.data
-                self.cmd_queue.appendleft(cmd)
-
+        print("Writing Collector Tilt: " + str(int(data.data)))
+        self.collector_tilt.write(int(data.data))
     
     def _exit_handler(self):
-        self.arduino.close()
+        # TODO: mbed serial close()?
+        exit()
+
+    def _signal_handler(self, signal, frame):
+        exit()
 
 if __name__ == "__main__":
     try:
