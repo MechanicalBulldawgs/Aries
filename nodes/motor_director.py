@@ -2,7 +2,7 @@
 
 """This node interfaces with an Arduino to control motors """
 
-import rospy, serial, atexit
+import rospy, serial, atexit, signal
 from mbedrpc import *
 from threading import Lock
 from collections import deque
@@ -42,6 +42,7 @@ class motor_director(object):
         rospy.Subscriber(collector_spin_cmds_topic, Int16, self.collector_spin_callback)
         rospy.Subscriber(collector_tilt_cmds_topic, Int16, self.collector_tilt_callback)
 
+        signal.signal(signal.SIGINT, self._signal_handler)
         atexit.register(self._exit_handler)
 
     def run(self):
@@ -74,6 +75,9 @@ class motor_director(object):
     
     def _exit_handler(self):
         # TODO: mbed serial close()?
+        exit()
+
+    def _signal_handler(self, signal, frame):
         exit()
 
 if __name__ == "__main__":

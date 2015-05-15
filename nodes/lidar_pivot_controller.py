@@ -4,7 +4,7 @@ import roslib; roslib.load_manifest('aries')
 import rospy
 from  lib_robotis import USB2Dynamixel_Device, Robotis_Servo
 from math import *
-from std_msgs.msg import Float32
+from std_msgs.msg import Float32, String
 from aries.srv import LidarPivotAngle, LidarPivotAngleResponse, LidarPivotAngleRequest
 
 '''
@@ -23,7 +23,7 @@ class lidar_pivot_controller(object):
         rospy.init_node("lidar_pivot_controller")
 
         # Load relevant parameters from ROS parameter server
-        dyn_port = rospy.get_param("ports/dynamixel", "/dev/ttyUSB0")
+        dyn_port = rospy.get_param("ports/dynamixel", "/dev/ttyUSB1")
         dyn_baud = rospy.get_param("baudrates/dynamixel_baud", 1000000)
 
         self.target_angle = rospy.get_param("dynamixel_settings/laying_angle", INITIAL_ANGLE)       # Target angle in radians
