@@ -82,7 +82,7 @@ class Dump_Controller(object):
         # Orchestrate dump action
         ##############################
         #tilt collector back
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(50)
         print("Tilt Collector back")
         print("Tilt colelctor angle: " + str(self.collector_min))
         while (self.collector_angle > self.collector_min[0]) and self.take_dump and not rospy.is_shutdown():
@@ -97,7 +97,6 @@ class Dump_Controller(object):
         self.publish_collector_tilt_command(self.collector_tilt_stop_signal)
         
         if not self.take_dump:
-            self.take_dump = False
             return
 
         #dump hopper and wait a few seconds
@@ -115,7 +114,6 @@ class Dump_Controller(object):
         self.publish_hopper_command(self.hopper_stop_signal)
 
         if not self.take_dump:
-            self.take_dump = False
             return
 
         rospy.sleep(self.dump_duration)
@@ -133,7 +131,6 @@ class Dump_Controller(object):
         self.publish_hopper_command(self.hopper_stop_signal)
 
         if not self.take_dump:
-            self.take_dump = False
             return
 
         # #put collector back towards hopper
@@ -155,10 +152,17 @@ class Dump_Controller(object):
         '''
         Callback for dump cmds topic.
         '''
+        print("Received DUMP CONTROL COMMAND: " + str(data.data))
         if data.data == "DUMP":
             self.take_dump = True
         elif data.data == "STOP":
-            self.take_dump = False
+            self.dump_interrupt_received()
+
+    def dump_interrupt_received(self):
+        '''
+        '''
+        self.take_dump = False
+
 
     def hopper_pot_callback(self, data):
         '''

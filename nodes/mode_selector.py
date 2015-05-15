@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-import socket, rospy, cPickle, signal, atexit
+import socket, rospy, cPickle, signal, atexit, math
 import roslib; roslib.load_manifest("aries")
 
 from sensor_msgs.msg import Joy
-from std_msgs.msg import String, Int8
+from std_msgs.msg import String, Int8, Float32
 from aries.msg import DurationCmd
 
 '''
@@ -30,8 +30,16 @@ class Mode_Selector(object):
         self.valid_modes = [mode for mode in modes]
         print("Loaded modes: " + str(self.valid_modes))
 
+        # Load LIDAR Pivot stuff
+        self.PIVOT_LAYDOWN = rospy.get_param("dynamixel_settings/laying_angle", 20)
+        self.PIVOT_STAND = rospy.get_param("dyanmixel_settings/standing_angle", 0)
+        self.PIVOT_MAX = rospy.get_param("dyanimxel_settings/top_limit", 25)
+        self.PIVOT_MIN = rospy.get_param("dynamixel_settings/bottom_limit", -1)
+
         cmds_topic = rospy.get_param("topics/duration_cmds", "duration_cmds")
         self.duration_cmds_pub = rospy.Publisher(cmds_topic, DurationCmd, queue_size = 10)
+        pivot_cmds_topic = rospy.get_param("topics/lidar_pivot_target_angles", "lidar_lidar_pivot_target_angles")
+        self.lidar_pivot_pub = rospy.Publisher(pivot_cmds_topic, Float32, queue_size = 10)
 
         atexit.register(self._exit_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -77,6 +85,45 @@ class Mode_Selector(object):
                     print("poorly formatted input")
                 else:
                     self.duration_cmds_pub.publish(dcmd)
+            elif self.current_mode == "lidar_pivot":
+                # lidar pivot control
+                print("===== Command Menu: =====")
+                print(" - stand")
+                print(" - lay-down")
+                print(" - angle <target angle (in degrees)>")
+                print(" - Exit lidar pivot control: cm")
+                print("=========================")
+                uinput = raw_input("Enter command: ")
+                if uinput == "q": exit()
+                if uinput == "cm":
+                    self.current_mode = Mode_Selector.DEFAULT_MODE
+                    msg = String()
+                    msg.data = Mode_Selector.DEFAULT_MODE
+                    self.mode_pub.publish(msg)
+                    continue
+                angle_cmd = Float32()
+                uinput = uinput.split(" ")
+
+                if uinput[0] == "stand":
+                    angle_cmd.data = math.radians(0)
+                    self.lidar_pivot_pub.publish(angle_cmd)
+                elif uinput[0] == "lay-down":
+                    angle_cmd.data = math.radians(20)
+                    self.lidar_pivot_pub.publish(angle_cmd)
+                elif uinput[0] == "angle":
+                    try:
+                        a = float(uinput[1])
+                    except:
+                        print("bad input")
+                    else:
+                        if a >= self.PIVOT_MIN and a <= self.PIVOT_MAX:
+                            angle_cmd.data = math.radians(a)
+                            self.lidar_pivot_pub.publish(angle_cmd)
+                        else:
+                            print("Angle out of range")
+                else:
+                    print("bad input")
+
             else:
                 print("=== MODE SELECTION MENU ===")
                 for mode in self.valid_modes:
