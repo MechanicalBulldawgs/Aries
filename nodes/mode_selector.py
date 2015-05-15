@@ -53,7 +53,13 @@ class Mode_Selector(object):
             if self.current_mode == "duration_teleop":
                 # duration teleoperation mode
                 print("===== Command Menu: =====")
-                print(" - forward <duration>\n - backward <duration>\n - left <duration>\n - right <duration>\n - collect <duration>\n - tilt-collector \n - dump \n - stop")
+                print(" - forward <duration>\n - backward <duration>")
+                print(" - left <duration>\n - right <duration>")
+                print(" - collect <duration>\n - tilt-collector")
+                print(" - dump\n - take-dump\n - arc-left <duration>")
+                print(" - arc-left-reverse <duration>\n - arc-right <duration>")
+                print(" - arc-right-reverse <duration>\n - mine <duration>")
+                print(" - stop")
                 print(" - Exit duration_teleop mode: cm")
                 print("=========================")
                 uinput = raw_input("Enter command: ")

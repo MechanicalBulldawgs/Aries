@@ -135,7 +135,8 @@ class Duration_Teleop(object):
 
     def robot_stop(self):
         '''
-        Calling this function sends stop commands to all motors on robot
+        Calling this function sends stop commands to all motors
+        on robot
         '''
         # Hopper stop
         hopper_stop = Int16()
@@ -163,7 +164,10 @@ class Duration_Teleop(object):
     def issue_command(self, cmd):
         '''
         Given string command, send appropriate motor commands
-        Commands: forward, backward, left, right, collect, tilt-collector, dump, stop
+        Commands: forward, backward, left, right, un/collect,
+                  un/tilt-collector, un/dump, take-dump,
+                  arc-left, arc-left-reverse, arc-right,
+                  arc-right-reverse, mine, stop
         '''
         print("CMD: " + str(cmd))
         if cmd == "forward":
