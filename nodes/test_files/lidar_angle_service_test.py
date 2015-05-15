@@ -14,9 +14,12 @@ if __name__ == "__main__":
 	pub = rospy.Publisher("lidar_pivot_control", Float32)
 
 	while True:
+		resp = get_lidar_pivot_position("Garbage")
+		print("Current Angle: " + str(resp.angle))
 		target = raw_input("Enter Angle: ")
 		try:
 			target = float(target)
 		except:
 			exit()
-		pub.publish(Float32(target))
+		pub.publish(Float32(math.radians(target)))
+		rospy.sleep(1)
