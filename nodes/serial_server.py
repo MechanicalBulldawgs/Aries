@@ -26,7 +26,7 @@ class serial_server(object):
         """Attempt to get parameters from the ROS server and use them to initialize the list 
         of touch sensors and the connection to the Arduino"""
 
-        port = rospy.get_param("ports/sensor_arduino", "/dev/ttyUSB0")
+        port = "/dev/ttyACM3"#rospy.get_param("ports/sensor_arduino", "/dev/ttyUSB0")
         baudrate = rospy.get_param("baudrates/sensor_arduino", 115200)
         print("Attempting to Connect to Arduino on port: " + str(port))
 
