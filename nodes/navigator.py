@@ -2,6 +2,7 @@
 
 import rospy, signal, atexit, math
 from geometry_msgs.msg import Twist, Point, PoseStamped, Pose
+from sensor_msgs.msg import PointCloud
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 from std_msgs.msg import Bool
 '''
@@ -36,6 +37,7 @@ class PFieldNavigator(object):
         self.received_pose = False
         self.current_goal = Point()
         self.beacon_lost = True
+        self.centroid_obstacles = None
 
         self.previousDirection = 1.0 #initalize it to move forward more often
         
@@ -51,6 +53,7 @@ class PFieldNavigator(object):
         rospy.Subscriber(ROBOPOSE_TOPIC, PoseStamped, self.robot_pose_callback)
         rospy.Subscriber(GOAL_TOPIC, Point, self.nav_goal_callback)
         rospy.Subscriber(BEACON_LOST_TOPIC, Bool, self.beacon_lost_callback)
+        rospy.Subscriber('/aries/obstacle_centroids', PointCloud, self.obstacle_callback)
 
     def nav_goal_callback(self, data):
         '''
@@ -71,6 +74,9 @@ class PFieldNavigator(object):
         '''
         self.received_pose = True
         self.robot_pose = self.transform_pose(data.pose)
+        
+    def obstacle_callback(self, pc):
+        self.centroid_obstacles = pc
 
     def transform_pose(self, pose):
         '''
