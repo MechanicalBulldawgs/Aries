@@ -1,4 +1,4 @@
-import rospy
+import rospy, math
 import aries.srv
 from std_msgs.msg import Float32
 
@@ -11,12 +11,15 @@ if __name__ == "__main__":
 	resp = get_lidar_pivot_position("Garbage")
 	print("Angle: " + str(resp.angle))
 
-	pub = rospy.Publisher("lidar_pivot_control", Float32)
+	pub = rospy.Publisher("lidar_pivot_target_angles", Float32)
 
 	while True:
+		resp = get_lidar_pivot_position("Garbage")
+		print("Current Angle: " + str(math.degrees(resp.angle)))
 		target = raw_input("Enter Angle: ")
 		try:
 			target = float(target)
 		except:
 			exit()
-		pub.publish(Float32(target))
+		pub.publish(Float32(math.radians(target)))
+		rospy.sleep(1)

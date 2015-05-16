@@ -14,8 +14,12 @@
     <node pkg="aries" type="timer_teleop.py" output="screen" name="duration_teleop"/>
 
     <node pkg="aries" type="serial_server.py" output="screen" name="serial_server"/>
+    
+    <!--<node pkg="aries" type="mbed_server.py" output="screen" name="mbed_server"/> --> 
 
     <node pkg="aries" type="dump_controller.py" output="screen" name="dump_controller"/>
+
+    <node pkg="aries" type="lidar_pivot_controller.py" output="screen" name="lidar_pivot_controller"/>
 
     <node pkg="aries" type="robot_state_reporter.py" output="screen" name="robot_state_reporter"/>
 
