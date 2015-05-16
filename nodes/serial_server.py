@@ -28,7 +28,7 @@ class serial_server(object):
 
         port = rospy.get_param("ports/sensor_arduino", "/dev/ttyUSB0")
         baudrate = rospy.get_param("baudrates/sensor_arduino", 115200)
-        print("Connecting to Arduino on port: " + str(port))
+        print("Attempting to Connect to Arduino on port: " + str(port))
         self.arduino = serial.Serial(port, baudrate, timeout = 1)
         print("Connected to Arduino on port: " + str(port))
         atexit.register(self._cleanup)
