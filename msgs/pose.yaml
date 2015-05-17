@@ -1,7 +1,0 @@
-header: 
-    seq: 1
-    stamp: now
-    frame_id: map
-pose:
-    position: [5.0, 5.0, 0.0]
-    orientation: [0.0, 0.0, 0.0, 1.0]
