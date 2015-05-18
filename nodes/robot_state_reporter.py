@@ -102,7 +102,6 @@ class State_Reporter(object):
             state = "TRANSITIONING"
         elif self.hopper_max[0] < hopper_angle:
             state = "DUMPING"
-            #rospy.logerr("Hopper Angle: Out of Bounds: " + str(hopper_angle) + ". Hopper may be in dangerous position.")
         return state
 
     def get_collector_state(self, collector_angle):
