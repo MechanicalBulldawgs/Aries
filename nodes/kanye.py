@@ -19,6 +19,7 @@ class Autonomy_State_Machine(object):
 		rospy.init_node("autonomy_node")
 		
 		self.hopper_state = None
+		self.autonomous = False
 		
 		self.startComplete = False
 		self.navBinComplete = False
@@ -48,6 +49,7 @@ class Autonomy_State_Machine(object):
 		REACHED_GOAL_TOPIC = rospy.get_param("topics/reached_goal", "reached_goal")
 		GOAL_TOPIC = rospy.get_param("topics/navigation_goals", "nav_goal")
 		ROBOPOSE_TOPIC = rospy.get_param("topics/localization_pose", "beacon_localization_pose")
+		OP_MOD_TOPIC = rospy.get_param("topics/op_mode")
 		
 
 		
@@ -56,6 +58,7 @@ class Autonomy_State_Machine(object):
 		rospy.Subscriber(hopper_state_topic, self.hopper_state_callback)
 		rospy.Subscriber(REACHED_GOAL_TOPIC, Bool, self.reached_goal_callback)
 		rospy.Subscriber(ROBOPOSE_TOPIC, PoseStamped, self.robot_pose_callback)
+		rospy.Subscriber(OP_MOD_TOPIC, String, self.op_mode_callback)
 		
 		# Setup publishers
 		self.dump_pub = rospy.Publisher(dump_topic, String, queue_size = 10)
@@ -67,7 +70,14 @@ class Autonomy_State_Machine(object):
 		'''
 		STATE MACHINE!
 		'''
+		rate = rospy.Rate(10)
+
 		while not rospy.is_shutdown():
+			if stateMachineOff():
+				self.current_state = stateStart
+				rate.sleep()
+				continue
+
 			if self.current_state == stateStart:
 				self.start_state()
 			elif self.current_state == stateNavMining:
@@ -84,6 +94,7 @@ class Autonomy_State_Machine(object):
 				self.current_state = stateStart
 			
 			self.transition()
+			rate.sleep()
 
 	def start_state(self):
 		'''
@@ -206,19 +217,26 @@ class Autonomy_State_Machine(object):
 				if ((self.dumpTime + 10) == time.time()):
 					self.current_state = stateNavMining
 					self.dumpStatePublishedFlag = False
+
+	def stateMachineOff(self):
+		return !self.autonomous
 			
 	def hopper_state_callback(self, state):
-		self.hopper_state = state
+		self.hopper_state = state.data
 		
 	def reached_goal_callback(self, data):
-		self.reached_goal = data
+		self.reached_goal = data.data
 		
 	def robot_pose_callback(self, data):
 		self.robot_pose = self.transform_pose(data.pose)
 
+	def op_mode_callback(self, data):
+		self.autonomous = (data.data=='autonomous')
+
 if __name__ == "__main__":
 	try:
 		machine = Autonomy_State_Machine()
+		machine.run()
 	except rospy.ROSInterruptException as er:
 		rospy.logerr(str(er))
 	else:
