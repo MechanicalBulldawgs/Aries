@@ -3,7 +3,9 @@
     
 	<rosparam command="load" file="$(find aries)/param/ports.yaml" />
     <rosparam command="load" file="$(find aries)/param/topics.yaml" />
-    <rosparam command="load" file="$(find aries)/param/motor_params.yaml" />   
+    <rosparam command="load" file="$(find aries)/param/motor_params.yaml" />
+    <rosparam command="load" file="$(find aries)/param/localization.yaml" />
+    <rosparam command="load" file="$(find aries)/param/map_params.yaml" />   
     
     <!-- Launch SICK LIDAR -->
     <node name="sick_tim551_2050001" pkg="sick_tim" type="sick_tim551_2050001" respawn="false" output="screen">

@@ -3,6 +3,8 @@
 
 	<rosparam command="load" file="$(find aries)/param/ports.yaml" />
     <rosparam command="load" file="$(find aries)/param/topics.yaml" />
+    <rosparam command="load" file="$(find aries)/param/motor_params.yaml" />
+    
 
 	<node name="joystick" pkg="joy" type="joy_node"/>	
 

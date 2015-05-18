@@ -3,7 +3,7 @@ import socket, rospy, cPickle
 import roslib; roslib.load_manifest("aries")
 
 from sensor_msgs.msg import Joy
-from std_msgs.msg import String, Int8
+from std_msgs.msg import String, Int8, Float32
 from aries.msg import DurationCmd
 
 '''
@@ -36,6 +36,7 @@ class Station_Transmitter(object):
         joystick_topic = rospy.get_param("topics/joystick", "joy")
         op_mode_topic = rospy.get_param("topics/op_mode", "operation_mode")
         duration_cmds_topic = rospy.get_param("topics/duration_cmds", "duration_cmds")
+        pivot_cmds_topic = rospy.get_param("topics/lidar_pivot_target_angles", "lidar_lidar_pivot_target_angles")
 
         ################################################
         #######   Setup comms with robot   #############
@@ -53,11 +54,20 @@ class Station_Transmitter(object):
         rospy.Subscriber(joystick_topic, Joy, self.joy_callback)
         rospy.Subscriber(duration_cmds_topic, DurationCmd, self.duration_cmd_callback)
         rospy.Subscriber(op_mode_topic, String, self.mode_callback)
+        rospy.Subscriber(pivot_cmds_topic, Float32, self.lidar_pivot_callback)
 
     def run(self):
         '''
         '''
         rospy.spin()
+
+    def lidar_pivot_callback(self, data):
+        '''
+        This function gets called when a message is received from the lidar pivot cmds topic 
+        '''
+        data_pickle = cPickle.dumps(data)
+        if self.current_mode == "lidar_pivot":
+            self.data_sock.sendto(data_pickle, (self.ROBOT_IP, self.DATA_LINE_PORT))
 
     def joy_callback(self, data):
         '''
@@ -75,6 +85,8 @@ class Station_Transmitter(object):
         data_pickle = cPickle.dumps(data)
         if self.current_mode == "duration_teleop":
             self.data_sock.sendto(data_pickle, (self.ROBOT_IP, self.DATA_LINE_PORT))
+
+
 
 
     def mode_callback(self, data):

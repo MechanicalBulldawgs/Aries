@@ -51,18 +51,22 @@ class lidar_pivot_controller(object):
                 self.dyn = USB2Dynamixel_Device(dev_name = dyn_port, baudrate = dyn_baud)
             except:
                 print("Failed to connect to dynamixel. Will continue trying.")
+            else:
+                good_conn = True
             if not good_conn:
                 # above connection failed, try again.
+                rospy.sleep(3)
                 continue
             # Above connection succeeded, try to create servo object
             try:
                 self.servo = Robotis_Servo(self.dyn, dyn_id)
             except:
                 print("Failed to create servo object.  Will continue trying.")
+                rospy.sleep(3)
             else:
                 # everything was successful
                 break
-            rospy.sleep(3)
+            
 
         # Servo Motor Setup
         self.dyn = USB2Dynamixel_Device(dev_name = dyn_port, baudrate = dyn_baud)
