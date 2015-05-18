@@ -3,7 +3,7 @@ import socket, atexit, signal, rospy, cPickle
 
 from multiprocessing import Process, Value, Lock
 from sensor_msgs.msg import Joy
-from std_msgs.msg import String
+from std_msgs.msg import String, Float32
 from aries.msg import DurationCmd
 
 '''
@@ -44,7 +44,9 @@ class Station_Receiver(object):
         op_mode_topic = rospy.get_param("topics/op_mode", "operation_mode")
         joystick_topic = rospy.get_param("topics/joystick", "joy")
         duration_cmds_topic = rospy.get_param("topics/duration_cmds", "duration_cmds")
-        
+        pivot_cmds_topic = rospy.get_param("topics/lidar_pivot_target_angles", "lidar_lidar_pivot_target_angles")
+       
+        self.lidar_pivot_pub = rospy.Publisher(pivot_cmds_topic, Float32, queue_size = 10)
         self.duration_cmds_pub = rospy.Publisher(duration_cmds_topic, DurationCmd, queue_size = 10)
         self.mode_pub = rospy.Publisher(op_mode_topic, String, queue_size = 10)
         self.joy_pub = rospy.Publisher(joystick_topic, Joy, queue_size = 10)
@@ -108,6 +110,9 @@ class Station_Receiver(object):
                 self.duration_cmds_pub.publish(data)
             elif current_mode == "autonomous":
                 pass
+            elif current_mode == "lidar_pivot":
+                # Relay lidar pivot command
+                self.lidar_pivot_pub.publish(data)
 
             rate.sleep()
     

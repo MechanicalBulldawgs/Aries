@@ -19,7 +19,7 @@ drive_settings:
     turn_speed: 7     # Speed for turning
     drive_stop: 0
     mining_drive_speed: 7
-    arc_drive_speed: 7
+    arc_turn_speed: 4
 dynamixel_settings:
     id: 1
     laying_angle: 22        # angle dynamixel is at when laying level (init angle)       
