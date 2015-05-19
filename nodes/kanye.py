@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-import antigravity, time
-from geometry_msgs.msg import Point, Pose
+import time, rospy
+from geometry_msgs.msg import Point, Pose, PoseStamped
+from std_msgs.msg import Bool, String
 
 #state constants
 stateStart = 0
@@ -55,13 +56,13 @@ class Autonomy_State_Machine(object):
 		
 		
 		# Setup subscriptions
-		rospy.Subscriber(hopper_state_topic, self.hopper_state_callback)
+		rospy.Subscriber(hopper_state_topic, String, self.hopper_state_callback)
 		rospy.Subscriber(REACHED_GOAL_TOPIC, Bool, self.reached_goal_callback)
 		rospy.Subscriber(ROBOPOSE_TOPIC, PoseStamped, self.robot_pose_callback)
 		rospy.Subscriber(OP_MOD_TOPIC, String, self.op_mode_callback)
 		
 		# Setup publishers
-		self.dump_pub = rospy.Publisher(dump_topic, String, queue_size = 10)
+		self.dump_pub = rospy.Publisher(dump_cmds_topic, String, queue_size = 10)
 		self.goal_pub = rospy.Publisher(GOAL_TOPIC, Point, queue_size = 10)
 		
 		self.current_state = stateStart
@@ -73,7 +74,7 @@ class Autonomy_State_Machine(object):
 		rate = rospy.Rate(10)
 
 		while not rospy.is_shutdown():
-			if stateMachineOff():
+			if self.stateMachineOff():
 				self.current_state = stateStart
 				rate.sleep()
 				continue
@@ -111,7 +112,7 @@ class Autonomy_State_Machine(object):
 		'''
 		if mining_area[1] <= self.robot_pose.position.y:
 			self.navMiningComplete = True
-		elif: self.navMiningFlag:
+		elif self.navMiningFlag:
 				self.navMiningFlag = False
 				goal_point = Point()
 				goal_point.x = mining_waypoints[0][0]
@@ -219,7 +220,7 @@ class Autonomy_State_Machine(object):
 					self.dumpStatePublishedFlag = False
 
 	def stateMachineOff(self):
-		return !self.autonomous
+		return  not self.autonomous
 			
 	def hopper_state_callback(self, state):
 		self.hopper_state = state.data
