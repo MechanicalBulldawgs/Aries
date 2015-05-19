@@ -109,11 +109,11 @@ class State_Reporter(object):
         Determine and return current collector tilt state 
         '''
         if collector_angle <= self.collector_min[0]: 
-            state = "RESTING"
+            state = "DUMPING"
         elif self.collector_min[0] < collector_angle <= self.collector_max[0]:
             state = "TRANSITIONING"
         elif self.collector_max[0] < collector_angle:
-            state =  "DUMPING"
+            state =  "COLLECTING"
             #rospy.logerr("Collector Angle: Out of Bounds: " + str(collector_angle) + ". Collector may be in dangerous position.")
 
         return state
