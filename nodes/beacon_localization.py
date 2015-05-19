@@ -77,6 +77,7 @@ class BeaconLocalizer(object):
         loc = rospy.get_param("beacon_localization/right_post_loc", RIGHT_POST_LOC)
         RIGHT_POST_LOC = (float(loc[0]), float(loc[1]))
         BEACON_LOST_TOPIC = rospy.get_param("topics/beacon_lost", "beacon_lost")
+        print("POST DIST: " + str(POST_DIST))
         ###################################
 
         ###################################

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import rospy
+import rospy, math
 from threading import Lock
 from aries.msg import DurationCmd
 from geometry_msgs.msg import Twist
@@ -240,26 +240,46 @@ class Duration_Teleop(object):
         # Moves forward in a leftward arc
         elif cmd == "arc-left":
             twist = Twist()
-            twist.linear.x = DRIVE_SPEED
-            twist.angular.z = -ARC_TURN_SPEED
+            x = DRIVE_SPEED
+            z = -ARC_TURN_SPEED
+            norm = math.sqrt(x**2 + z**2)
+            x = x / norm
+            z = z / norm
+            twist.linear.x = DRIVE_SPEED * x
+            twist.angular.z = DRIVE_SPEED * z
             self.drive_pub.publish(twist)
         # Performs the reverse of arc-left
         elif cmd == "arc-left-rev":
             twist = Twist()
-            twist.linear.x = -DRIVE_SPEED
-            twist.angular.z = -ARC_TURN_SPEED
+            x = -DRIVE_SPEED
+            z = -ARC_TURN_SPEED
+            norm = math.sqrt(x**2 + z**2)
+            x = x / norm
+            z = z / norm
+            twist.linear.x = DRIVE_SPEED * x
+            twist.angular.z = DRIVE_SPEED * z
             self.drive_pub.publish(twist)
         # Moves forward in a rightward arc
         elif cmd == "arc-right":
             twist = Twist()
-            twist.linear.x = DRIVE_STOP
-            twist.angular.z = ARC_TURN_SPEED
+            x = DRIVE_SPEED
+            z = ARC_TURN_SPEED
+            norm = math.sqrt(x**2 + z**2)
+            x = x / norm
+            z = z / norm
+            twist.linear.x = DRIVE_SPEED * x
+            twist.angular.z = DRIVE_SPEED * z
             self.drive_pub.publish(twist)
         # Performs the reverse of arc-right
         elif cmd == "arc-right-rev":
             twist = Twist()
-            twist.linear.x = -DRIVE_SPEED
-            twist.angular.z = ARC_TURN_SPEED
+            x = -DRIVE_SPEED
+            z = ARC_TURN_SPEED
+            norm = math.sqrt(x**2 + z**2)
+            x = x / norm
+            z = z / norm
+            twist.linear.x = DRIVE_SPEED * x
+            twist.angular.z = DRIVE_SPEED * z
             self.drive_pub.publish(twist)
         else:
             # invalid command
