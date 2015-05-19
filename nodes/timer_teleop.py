@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import rospy
+import rospy, math
 from threading import Lock
 from aries.msg import DurationCmd
 from geometry_msgs.msg import Twist
@@ -48,7 +48,7 @@ class Duration_Teleop(object):
         global HOPPER_DUMP, HOPPER_STOP, HOPPER_UNDUMP 
         global COLLECTOR_SPIN, COLLECTOR_STOP, COLLECTOR_RSPIN 
         global COLLECTOR_TILT, COLLECTOR_TSTOP, COLLECTOR_UNTILT
-        global DRIVE_SPEED, DRIVE_STOP, MINING_DRIVE_SPEED, ARC_DRIVE_SPEED, TURN_SPEED
+        global DRIVE_SPEED, DRIVE_STOP, MINING_DRIVE_SPEED, ARC_TURN_SPEED, TURN_SPEED
         try:
             # Constants for hopper
             HOPPER_DUMP = int(rospy.get_param("dump_settings/dump_signal"))
@@ -66,7 +66,7 @@ class Duration_Teleop(object):
             DRIVE_SPEED = int(rospy.get_param("drive_settings/drive_speed"))
             DRIVE_STOP = int(rospy.get_param("drive_settings/drive_stop"))
             MINING_DRIVE_SPEED = int(rospy.get_param("drive_settings/mining_drive_speed"))
-            ARC_DRIVE_SPEED = int(rospy.get_param("drive_settings/arc_drive_speed"))
+            ARC_TURN_SPEED = int(rospy.get_param("drive_settings/arc_turn_speed"))
             TURN_SPEED = int(rospy.get_param("drive_settings/turn_speed"))
         except:
             rospy.logerr("Failed to load motor parameters.")
@@ -101,7 +101,7 @@ class Duration_Teleop(object):
         '''
         '''
         rospy.wait_for_message(self.cmds_topic, DurationCmd)
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(50)
         current_cmd = None
         active = False
         start_time = 0 #rospy.get_time() -> get current time in float seconds
@@ -231,8 +231,8 @@ class Duration_Teleop(object):
             twist = Twist()
             collect_cmd = Int16()
             collect_cmd.data = COLLECTOR_SPIN
-            twist.linear.x = MINING_DRIVE_SPEED
-            twist.angular.z = MINING_DRIVE_SPEED
+            twist.linear.x = DRIVE_SPEED
+            twist.angular.z = 0
             self.collector_spin_pub.publish(collect_cmd)
             self.drive_pub.publish(twist)
         # These will be extraneous if arcade movement
@@ -240,26 +240,46 @@ class Duration_Teleop(object):
         # Moves forward in a leftward arc
         elif cmd == "arc-left":
             twist = Twist()
-            twist.linear.x = DRIVE_SPEED
-            twist.angular.z = ARC_DRIVE_SPEED
+            x = DRIVE_SPEED
+            z = -ARC_TURN_SPEED
+            norm = math.sqrt(x**2 + z**2)
+            x = x / norm
+            z = z / norm
+            twist.linear.x = DRIVE_SPEED * x
+            twist.angular.z = DRIVE_SPEED * z
             self.drive_pub.publish(twist)
         # Performs the reverse of arc-left
         elif cmd == "arc-left-rev":
             twist = Twist()
-            twist.linear.x = -DRIVE_SPEED
-            twist.angular.z = -ARC_DRIVE_SPEED
+            x = -DRIVE_SPEED
+            z = -ARC_TURN_SPEED
+            norm = math.sqrt(x**2 + z**2)
+            x = x / norm
+            z = z / norm
+            twist.linear.x = DRIVE_SPEED * x
+            twist.angular.z = DRIVE_SPEED * z
             self.drive_pub.publish(twist)
         # Moves forward in a rightward arc
         elif cmd == "arc-right":
             twist = Twist()
-            twist.linear.x = ARC_DRIVE_SPEED
-            twist.angular.z = DRIVE_SPEED
+            x = DRIVE_SPEED
+            z = ARC_TURN_SPEED
+            norm = math.sqrt(x**2 + z**2)
+            x = x / norm
+            z = z / norm
+            twist.linear.x = DRIVE_SPEED * x
+            twist.angular.z = DRIVE_SPEED * z
             self.drive_pub.publish(twist)
         # Performs the reverse of arc-right
         elif cmd == "arc-right-rev":
             twist = Twist()
-            twist.linear.x = -ARC_DRIVE_SPEED
-            twist.angular.z = -DRIVE_SPEED
+            x = -DRIVE_SPEED
+            z = ARC_TURN_SPEED
+            norm = math.sqrt(x**2 + z**2)
+            x = x / norm
+            z = z / norm
+            twist.linear.x = DRIVE_SPEED * x
+            twist.angular.z = DRIVE_SPEED * z
             self.drive_pub.publish(twist)
         else:
             # invalid command

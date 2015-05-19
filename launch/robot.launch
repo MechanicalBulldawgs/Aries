@@ -3,10 +3,12 @@
     
 	<rosparam command="load" file="$(find aries)/param/ports.yaml" />
     <rosparam command="load" file="$(find aries)/param/topics.yaml" />
-    <rosparam command="load" file="$(find aries)/param/motor_params.yaml" />   
+    <rosparam command="load" file="$(find aries)/param/motor_params.yaml" />
+    <rosparam command="load" file="$(find aries)/param/localization.yaml" />
+    <rosparam command="load" file="$(find aries)/param/map_params.yaml" />   
     
-    <!-- Launch SICK LIDAR -->
-    <node name="sick_tim551_2050001" pkg="sick_tim" type="sick_tim551_2050001" respawn="false" output="screen">
+    <!-- Launch SICK LIDAR 
+    <node name="sick_tim551_2050001" pkg="sick_tim" type="sick_tim551_2050001" respawn="false" output="screen">-->
         <!-- default values: -->
         <!--
           <param name="min_ang" type="double" value="-2.35619449019" />
@@ -26,7 +28,7 @@
              <param name="hostname" type="string" value="192.168.1.43" />
              <param name="port" type="string" value="2112" />
         -->
-    </node>
+   <!-- </node>-->
         
     <!-- Launch hokuyo LIDAR -->
     <node name="hokuyo" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
@@ -35,9 +37,10 @@
         <param name="calibrate_time" type="bool" value="false"/> 
         
         <!-- Set the port to connect to here -->
-        <param name="port" type="string" value="/dev/ttyACM0"/> 
+        <param name="port" type="string" value="/dev/hokuyo"/> 
       
         <param name="intensity" type="bool" value="false"/>
+        <remap from="scan" to="aries/rear_scan" />
     </node>
 
 	<node pkg="aries" type="motor_director.py" output="screen" name="motor_director"/>

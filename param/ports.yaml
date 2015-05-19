@@ -1,7 +1,7 @@
-ports: {sensor_arduino: /dev/ttyUSB1, dynamixel: /dev/ttyUSB0, mbed: /dev/ttyACM0}
+ports: {sensor_arduino: /dev/arduino, dynamixel: /dev/ttyUSB0, mbed: /dev/mbed}
 baudrates: {dynamixel: 1000000, mbed: 115200, sensor_arduino: 115200}
 control_station_comms:
-    robot_ip: 192.168.1.13
+    robot_ip: 192.168.1.11
     control_modes: [autonomous, joystick, duration_teleop, lidar_pivot]
     default_mode: joystick
     control_line_port: 20173

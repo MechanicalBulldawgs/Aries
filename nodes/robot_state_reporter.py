@@ -102,7 +102,6 @@ class State_Reporter(object):
             state = "TRANSITIONING"
         elif self.hopper_max[0] < hopper_angle:
             state = "DUMPING"
-            #rospy.logerr("Hopper Angle: Out of Bounds: " + str(hopper_angle) + ". Hopper may be in dangerous position.")
         return state
 
     def get_collector_state(self, collector_angle):
@@ -110,11 +109,11 @@ class State_Reporter(object):
         Determine and return current collector tilt state 
         '''
         if collector_angle <= self.collector_min[0]: 
-            state = "RESTING"
+            state = "DUMPING"
         elif self.collector_min[0] < collector_angle <= self.collector_max[0]:
             state = "TRANSITIONING"
         elif self.collector_max[0] < collector_angle:
-            state =  "DUMPING"
+            state =  "COLLECTING"
             #rospy.logerr("Collector Angle: Out of Bounds: " + str(collector_angle) + ". Collector may be in dangerous position.")
 
         return state

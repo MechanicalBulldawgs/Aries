@@ -26,7 +26,7 @@ class serial_server(object):
         """Attempt to get parameters from the ROS server and use them to initialize the list 
         of touch sensors and the connection to the Arduino"""
 
-        port = "/dev/ttyACM3"#rospy.get_param("ports/sensor_arduino", "/dev/ttyUSB0")
+        port = rospy.get_param("ports/sensor_arduino", "/dev/ttyACM0")
         baudrate = rospy.get_param("baudrates/sensor_arduino", 115200)
         print("Attempting to Connect to Arduino on port: " + str(port))
 
@@ -34,7 +34,7 @@ class serial_server(object):
             try:
                 self.arduino = serial.Serial(port, baudrate, timeout = 1)
             except:
-                print("Failed to connecto to arduino.  Will continue trying.")
+                print("Failed to connect to arduino.  Will continue trying.")
                 rospy.sleep(3)
             else:
                 break
