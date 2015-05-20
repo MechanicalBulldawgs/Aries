@@ -45,14 +45,14 @@ class LaserObject(object):
          - angle 
         '''
         assert self.left_edge != None and self.right_edge != None, "Object edges not set.  Cannot process."
-        arc_ang = (self.right_edge - self.left_edge) * scan_msg.angle_increment
+        arc_ang = (self.left_edge - self.right_edge) * scan_msg.angle_increment
         right_dist = scan_msg.ranges[self.right_edge]
         left_dist = scan_msg.ranges[self.left_edge]
         try:
             self.length = math.sqrt((right_dist**2 + left_dist**2) - (2 * right_dist * left_dist * math.cos(arc_ang)))
         except:
             self.length = 0
-        self.centroid = int(abs(self.right_edge - self.left_edge) / 2) + self.left_edge
+        self.centroid = int(abs(self.right_edge - self.left_edge) / 2) + self.right_edge
         try:
             self.distance = scan_msg.ranges[self.centroid]
         except:
@@ -169,18 +169,18 @@ class BeaconLocalizer(object):
 
         ##################################
         # Visualization message (used to visualize software imposed laser range limit)
-        vis_scan = LaserScan()
-        vis_scan = scan_msg
-        vis_scan.range_max = MAX_RANGE
-        self.vis_scan_pub.publish(vis_scan)
+        # vis_scan = LaserScan()
+        # vis_scan = scan_msg
+        # vis_scan.range_max = MAX_RANGE
+        # self.vis_scan_pub.publish(vis_scan)
         ##################################
 
 
         ####################### 
         # Pick out objects from scan
         #######################
-        last_point = 0
-        edge_thresh = 0.025
+        last_point = 0          # Previous point
+        edge_thresh = 0.2       # thresh for edge detection
         scan_obj = LaserObject()
         scan_objs = []
         print("======================")
@@ -200,12 +200,12 @@ class BeaconLocalizer(object):
                 # found a left edge
                 if scan_obj.right_edge != None:
                     # make sure we've found a right edge already before this left edge
-                    scan_obj.left_edge = i
+                    scan_obj.left_edge = last_point
                     scan_obj.process(scan_msg)
                     # Make sure object is of expected length
                     # print("Potential obj Length: " + str(scan_obj.length))
-                    # if (scan_obj.length >= POST_WIDTH - POST_WIDTH_ERR) and (scan_obj.length <= POST_WIDTH + POST_WIDTH_ERR):
-                    scan_objs.append(scan_obj)
+                    if (scan_obj.length >= POST_WIDTH - POST_WIDTH_ERR) and (scan_obj.length <= POST_WIDTH + POST_WIDTH_ERR):
+                        scan_objs.append(scan_obj)
                     scan_obj = LaserObject()
                 else:
                     scan_obj = LaserObject()
@@ -216,7 +216,9 @@ class BeaconLocalizer(object):
             last_point = i
         print("num objects: " + str(len(scan_objs)))
         for obj in scan_objs:
-            print("~ OBJ: " + str(math.degrees(obj.angle)))
+            print("~ OBJ")
+            print("    ~ Angle: " + str(math.degrees(obj.angle)))
+            print("    ~ Length: " + str(obj.length))
         ######################
         # Find the beacon (two posts distanced a known distance apart)
         ######################
@@ -228,13 +230,14 @@ class BeaconLocalizer(object):
                 l_obj = scan_objs[li] # Grab left object for easy use
                 dist = self.obj_dist(r_obj, l_obj)  # calculate distance between right and left objects
                 # check if dist indicates these two objects are a potential beacon
-                if (dist > (POST_DIST - POST_DIST_ERR)) and (dist < (POST_DIST + POST_DIST_ERR)):
+                print("==== OBJ DIST ====")
+                if (dist >= (POST_DIST - POST_DIST_ERR)) and (dist <= (POST_DIST + POST_DIST_ERR)):
                     beacon_err = abs(dist - POST_DIST)
                     if beacon_err < min_beacon_err:
                         beacon = Beacon(right_post = r_obj, left_post = l_obj, actual_dist = dist, err = beacon_err)
                         min_beacon_err = beacon_err
+                        print("Potential Beacon (err: " + str(beacon_err))
                 ## Debugging/verbose information
-                print("==== OBJ DIST ====")
                 print("Right Obj: (Centroid: %d, Angle: %f)" % (r_obj.centroid, math.degrees(r_obj.angle)))
                 print("Left Obj: (Centroid: %d, Angle: %f)" % (l_obj.centroid, math.degrees(l_obj.angle)))
                 print("Distance: " + str(self.obj_dist(r_obj, l_obj)))
