@@ -44,9 +44,8 @@ class LocalizationFilter(object):
                     distance = math.sqrt(xSquared + ySquared)
                     if distance < MAXDISTANCECHANGE:
                         tally += (each/100)
-
+                self.storedData.append(self.newPosition)
                 if(tally >= VALUESTOSTORE/4):
-                    self.storedData.append(self.newPosition)
                     self.storedData.pop(0)
                     self.pose_pub.publish(self.newPosition)
 
