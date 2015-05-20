@@ -92,6 +92,9 @@ class Autonomy_State_Machine(object):
 		everything and verifying initilizations.
 		Also, Find the beacon for the first time, the very first time.
 		'''
+        # raise the lidar
+
+        self.startComplete = True
 		pass
 
 	def nav_mining_state(self):
@@ -142,9 +145,9 @@ class Autonomy_State_Machine(object):
 		'''
 		if self.navBinFlag:
 			goal_point = Point()
-			goal_point.x = bin_waypoint[self.waypointsMined][0]
-			goal_point.y = bin_waypoint[self.waypointsMined][1]
-			goal_point.z = bin_waypoint[self.waypointsMined][2]
+			goal_point.x = bin_waypoint[0]
+			goal_point.y = bin_waypoint[1]
+			goal_point.z = bin_waypoint[2]
 			self.goal_pub.publish(goal_point)
 			self.navBinFlag = False
 		elif self.reached_goal:
