@@ -2,7 +2,7 @@
 
 import time, rospy
 from geometry_msgs.msg import Point, Pose, PoseStamped
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool, String, Float32
 
 #state constants
 stateStart = 0
@@ -38,11 +38,11 @@ class Autonomy_State_Machine(object):
 		self.dumpTime = 0
 		
 		#Load parameters
-		mining_waypoints = rospy.get_param("waypoints/mining", "mining")
-		mining_area = rospy.get_param("waypoints/mining_area", "mining_area")
-		bin_waypoint = rospy.get_param("waypoints/bin", "bin")
-		COLLECTOR_SPIN = int(rospy.get_param("collector_settings/spin_signal"))
-		COLLECTOR_STOP = int(rospy.get_param("collector_settings/spin_stop_signal"))
+		self.mining_waypoints = rospy.get_param("waypoints/mining", "mining")
+		self.mining_area = rospy.get_param("waypoints/mining_area", "mining_area")
+		self.bin_waypoint = rospy.get_param("waypoints/bin", "bin")
+		self.COLLECTOR_SPIN = int(rospy.get_param("collector_settings/spin_signal"))
+		self.COLLECTOR_STOP = int(rospy.get_param("collector_settings/spin_stop_signal"))
 		
 		# Load topics
 		hopper_state_topic = rospy.get_param("topics/hopper_state", "hopper_state")
@@ -51,9 +51,7 @@ class Autonomy_State_Machine(object):
 		GOAL_TOPIC = rospy.get_param("topics/navigation_goals", "nav_goal")
 		ROBOPOSE_TOPIC = rospy.get_param("topics/localization_pose", "beacon_localization_pose")
 		OP_MOD_TOPIC = rospy.get_param("topics/op_mode")
-		
-
-		
+        LIDAR_PIVOT_TOPIC = rospy.get_param("topics/lidar_pivot_cmds", "lidar_pivot_control")
 		
 		# Setup subscriptions
 		rospy.Subscriber(hopper_state_topic, String, self.hopper_state_callback)
@@ -64,7 +62,8 @@ class Autonomy_State_Machine(object):
 		# Setup publishers
 		self.dump_pub = rospy.Publisher(dump_cmds_topic, String, queue_size = 10)
 		self.goal_pub = rospy.Publisher(GOAL_TOPIC, Point, queue_size = 10)
-		
+		self.lidar_pivot_pub = rospy.Publisher(LIDAR_PIVOT_TOPIC, String, queue_size = 10)
+
 		self.current_state = stateStart
 
 	def run(self):
@@ -105,9 +104,11 @@ class Autonomy_State_Machine(object):
 		Also, Find the beacon for the first time, the very first time.
 		'''
         # raise the lidar
-
+        angle_cmd = Float32()
+        angle_cmd.data = math.radians(-1)
+        self.lidar_pivot_pub.publish(angle_cmd)
+        # indicate that the start state is complete
         self.startComplete = True
-		pass
 
 	def nav_mining_state(self):
 		'''
@@ -235,7 +236,7 @@ class Autonomy_State_Machine(object):
 		self.robot_pose = self.transform_pose(data.pose)
 
 	def op_mode_callback(self, data):
-		self.autonomous = (data.data=='autonomous')
+		self.autonomous = (data.data=='autonomous')        
 
 if __name__ == "__main__":
 	try:

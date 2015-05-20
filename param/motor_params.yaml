@@ -18,7 +18,7 @@ drive_settings:
     drive_speed: 7    # Speed for driving
     turn_speed: 7     # Speed for turning
     drive_stop: 0
-    mining_drive_speed: 7
+    mining_drive_speed: 5
     arc_turn_speed: 6
 dynamixel_settings:
     id: 1
