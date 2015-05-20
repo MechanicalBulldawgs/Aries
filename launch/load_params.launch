@@ -4,5 +4,6 @@
 
 	<rosparam command="load" file="$(find aries)/param/cam_params.yaml" />
 	<rosparam command="load" file="$(find aries)/param/ports.yaml" />
+    <rosparam command="load" file="$(find aries)/param/localization.yaml" />
 	
 </launch>
