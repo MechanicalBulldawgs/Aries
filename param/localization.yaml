@@ -1,5 +1,8 @@
 beacon_localization:
     scan_topic: aries/rear_scan
-    post_distance: 1.32    # Distance posts are apart from one another on beacon 
-    left_post_loc: [-0.65, 0]
-    right_post_loc: [0.65, 0]
+    post_distance: 1.377    # Distance posts are apart from one another on beacon 
+    post_distance_err: 0.15
+    left_post_loc: [-0.739775, 0]
+    right_post_loc: [0.739775, 0]
+    post_width: 0.22
+    post_width_err: 0.15

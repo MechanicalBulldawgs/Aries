@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import rospy, signal, atexit, math
+import rospy, signal, atexit, math, time
 from sensor_msgs.msg import LaserScan
 from geometry_msgs.msg import PoseStamped, Point, Quaternion
 from tf.transformations import quaternion_from_euler
@@ -12,13 +12,16 @@ Proof of concept/sandbox module for trying out different ways to process lidar d
 
 ####### Default Global Values (stars lab motor tube testing) #######
 SCAN_TOPIC = "scan"
-POST_DIST = 0.6096      # Distance posts are apart from one another on beacon
-POST_DIST_ERR = 0.15#0.025  # Error allowed in post distance
-MAX_RANGE = 15#1.25         # Max Scan range to consider
+POST_DIST = 1.47955     # Distance posts are apart from one another on beacon
+POST_DIST_ERR = 0.05    #0.025  # Error allowed in post distance
+MAX_RANGE = 15#1.25     # Max Scan range to consider
 LARGE_NUMBER = 9999999  # Arbitrarily large number
 
-LEFT_POST_LOC = (0.3048, 0)     # Global coordinate of left post
-RIGHT_POST_LOC = (0.9144, 0)    # Global coordinate of right post
+POST_WIDTH = 0          # Expected width of post
+POST_WIDTH_ERR = 0.05  # Error allowed in post width
+
+LEFT_POST_LOC = (0.739775, 0)     # Global coordinate of left post
+RIGHT_POST_LOC = (-0.739775, 0)    # Global coordinate of right post
 #####################################
 
 class LaserObject(object):
@@ -42,9 +45,18 @@ class LaserObject(object):
          - angle 
         '''
         assert self.left_edge != None and self.right_edge != None, "Object edges not set.  Cannot process."
-        self.length = self.right_edge - self.left_edge
-        self.centroid = int(self.length / 2) + self.left_edge
-        self.distance = scan_msg.ranges[self.centroid]
+        arc_ang = (self.left_edge - self.right_edge) * scan_msg.angle_increment
+        right_dist = scan_msg.ranges[self.right_edge]
+        left_dist = scan_msg.ranges[self.left_edge]
+        try:
+            self.length = math.sqrt((right_dist**2 + left_dist**2) - (2 * right_dist * left_dist * math.cos(arc_ang)))
+        except:
+            self.length = 0
+        self.centroid = int(abs(self.right_edge - self.left_edge) / 2) + self.right_edge
+        try:
+            self.distance = scan_msg.ranges[self.centroid]
+        except:
+            self.distance = 0
         self.angle = self.centroid * scan_msg.angle_increment
 
 class Beacon(object):
@@ -62,6 +74,7 @@ class BeaconLocalizer(object):
 
     def __init__(self):
         global SCAN_TOPIC, POST_DIST, LEFT_POST_LOC, RIGHT_POST_LOC
+        global POST_WIDTH, POST_WIDTH_ERR, POST_DIST_ERR
         '''
         Lidar Processor constructor
         '''
@@ -70,8 +83,11 @@ class BeaconLocalizer(object):
         ###################################
         # Load beacon localization params
         ###################################
-        SCAN_TOPIC = rospy.get_param("beacon_localization/scan_topic", SCAN_TOPIC)
+        SCAN_TOPIC = "aries/rear_scan"#rospy.get_param("beacon_localization/scan_topic", SCAN_TOPIC)
         POST_DIST = rospy.get_param("beacon_localization/post_distance", POST_DIST)
+        PORT_DIST_ERR = rospy.get_param("beacon_localization/post_distance_err", POST_DIST_ERR)
+        POST_WIDTH = rospy.get_param("beacon_localization/post_width", POST_WIDTH)
+        POST_WIDTH_ERR = rospy.get_param("beacon_localization/post_width_err", POST_WIDTH_ERR)
         loc = rospy.get_param("beacon_localization/left_post_loc", LEFT_POST_LOC)
         LEFT_POST_LOC = (float(loc[0]), float(loc[1]))
         loc = rospy.get_param("beacon_localization/right_post_loc", RIGHT_POST_LOC)
@@ -116,9 +132,13 @@ class BeaconLocalizer(object):
         rate = rospy.Rate(10)
         this_scan = []
         while not rospy.is_shutdown():
-            if self.received_scan: 
+            if self.received_scan:
+                self.received_scan = False 
                 this_scan = self.current_scan
+                stime = time.time()
                 self.process_scan(this_scan)
+                etime = time.time()
+                print("Calc time: " + str(etime - stime))
 
             rate.sleep()
 
@@ -149,18 +169,18 @@ class BeaconLocalizer(object):
 
         ##################################
         # Visualization message (used to visualize software imposed laser range limit)
-        vis_scan = LaserScan()
-        vis_scan = scan_msg
-        vis_scan.range_max = MAX_RANGE
-        self.vis_scan_pub.publish(vis_scan)
+        # vis_scan = LaserScan()
+        # vis_scan = scan_msg
+        # vis_scan.range_max = MAX_RANGE
+        # self.vis_scan_pub.publish(vis_scan)
         ##################################
 
 
         ####################### 
         # Pick out objects from scan
         #######################
-        last_point = 0
-        edge_thresh = 0.025
+        last_point = 0          # Previous point
+        edge_thresh = 0.2       # thresh for edge detection
         scan_obj = LaserObject()
         scan_objs = []
         print("======================")
@@ -180,9 +200,12 @@ class BeaconLocalizer(object):
                 # found a left edge
                 if scan_obj.right_edge != None:
                     # make sure we've found a right edge already before this left edge
-                    scan_obj.left_edge = i
+                    scan_obj.left_edge = last_point
                     scan_obj.process(scan_msg)
-                    scan_objs.append(scan_obj)
+                    # Make sure object is of expected length
+                    # print("Potential obj Length: " + str(scan_obj.length))
+                    if (scan_obj.length >= POST_WIDTH - POST_WIDTH_ERR) and (scan_obj.length <= POST_WIDTH + POST_WIDTH_ERR):
+                        scan_objs.append(scan_obj)
                     scan_obj = LaserObject()
                 else:
                     scan_obj = LaserObject()
@@ -193,7 +216,9 @@ class BeaconLocalizer(object):
             last_point = i
         print("num objects: " + str(len(scan_objs)))
         for obj in scan_objs:
-            print("~ OBJ: " + str(math.degrees(obj.angle)))
+            print("~ OBJ")
+            print("    ~ Angle: " + str(math.degrees(obj.angle)))
+            print("    ~ Length: " + str(obj.length))
         ######################
         # Find the beacon (two posts distanced a known distance apart)
         ######################
@@ -205,13 +230,14 @@ class BeaconLocalizer(object):
                 l_obj = scan_objs[li] # Grab left object for easy use
                 dist = self.obj_dist(r_obj, l_obj)  # calculate distance between right and left objects
                 # check if dist indicates these two objects are a potential beacon
-                if (dist > (POST_DIST - POST_DIST_ERR)) and (dist < (POST_DIST + POST_DIST_ERR)):
+                print("==== OBJ DIST ====")
+                if (dist >= (POST_DIST - POST_DIST_ERR)) and (dist <= (POST_DIST + POST_DIST_ERR)):
                     beacon_err = abs(dist - POST_DIST)
                     if beacon_err < min_beacon_err:
                         beacon = Beacon(right_post = r_obj, left_post = l_obj, actual_dist = dist, err = beacon_err)
                         min_beacon_err = beacon_err
+                        print("Potential Beacon (err: " + str(beacon_err))
                 ## Debugging/verbose information
-                print("==== OBJ DIST ====")
                 print("Right Obj: (Centroid: %d, Angle: %f)" % (r_obj.centroid, math.degrees(r_obj.angle)))
                 print("Left Obj: (Centroid: %d, Angle: %f)" % (l_obj.centroid, math.degrees(l_obj.angle)))
                 print("Distance: " + str(self.obj_dist(r_obj, l_obj)))

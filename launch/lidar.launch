@@ -1,0 +1,29 @@
+<launch>
+
+    <!-- Launch hokuyo Rear LIDAR -->
+        <node name="hokuyorear" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
+          
+            <!-- Starts up faster, but timestamps will be inaccurate. --> 
+            <param name="calibrate_time" type="bool" value="false"/> 
+            
+            <!-- Set the port to connect to here -->
+            <param name="port" type="string" value="/dev/ttyACM1"/> 
+          
+            <param name="intensity" type="bool" value="false"/>
+            <remap from="scan" to="aries/rear_scan" />
+        </node>
+
+    <!-- Launch hokuyo front LIDAR -->
+    <node name="hokuyofront" pkg="hokuyo_node" type="hokuyo_node" respawn="false" output="screen">
+      
+        <!-- Starts up faster, but timestamps will be inaccurate. --> 
+        <param name="calibrate_time" type="bool" value="false"/> 
+        
+        <!-- Set the port to connect to here -->
+        <param name="port" type="string" value="/dev/ttyACM0"/> 
+      
+        <param name="intensity" type="bool" value="false"/>
+        <remap from="scan" to="aries/front_scan" />
+    </node>
+
+</launch>
