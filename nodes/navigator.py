@@ -145,7 +145,7 @@ class PFieldNavigator(object):
                 # the beacon is lost, turn search for beacon
                 self.received_pose = False
                	cmd = Twist()
-               	cmd.angular.z = 1
+               	cmd.angular.z = 6
                	self.drive_pub.publish(cmd)
             else:
                 pass
