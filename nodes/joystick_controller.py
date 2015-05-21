@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-import rospy, atexit, signal
+import rospy, atexit, signal, math
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16, String
 
 '''
 This module is used to convert joystick messages into appropriate affector commands.
@@ -10,35 +10,45 @@ This module is used to convert joystick messages into appropriate affector comma
 
 ###################################
 # Constants
-CONTROLLER_BUTTONS = {"A": 0, "B":1, "X": 2, "Y": 3, "R1": 5, "L1": 4} # TODO: FINISH THIS, USE BELOW
+CONTROLLER_BUTTONS = {"A": 0, "B":1, "X": 2, "Y": 3, "R1": 5, "L1": 4, "BACK": 6, "START": 7} # TODO: FINISH THIS, USE BELOW
+CONTROLLER_AXES = {"LSTICKV": 1, "LSTICKH": 0}
 # TODO: make this ROS parameters
-MAX_LINEAR_SPEED = 0.75
-MAX_ANGULAR_SPEED = 2
-MAX_TANK_SPEED = 255
+MAX_MAG = 7
+SLOP_THRESH = 0.15
 # Axes to use for drive twists
-JOY_LINEAR_AXIS = 1
-JOY_ANGULAR_AXIS = 0
-JOY_TANK_L_AXIS = 1
-JOY_TANK_R_AXIS = 4
-JOY_DUMP_BTTN = CONTROLLER_BUTTONS["R1"]
-JOY_UNDUMP_BTTN = CONTROLLER_BUTTONS["L1"]
+JOY_LINEAR_AXIS = CONTROLLER_AXES["LSTICKV"]
+JOY_ANGULAR_AXIS = CONTROLLER_AXES["LSTICKH"]
+JOY_DUMP_BTTN = CONTROLLER_BUTTONS["L1"]
+JOY_UNDUMP_BTTN = CONTROLLER_BUTTONS["R1"]
 JOY_CSPIN_BTTN = CONTROLLER_BUTTONS["A"]
 JOY_CRSPIN_BTTN = CONTROLLER_BUTTONS["B"]
 JOY_CTILT_BTTN = CONTROLLER_BUTTONS["X"]
 JOY_CUTILT_BTTN = CONTROLLER_BUTTONS["Y"]
-# Constants for hopper 
-HOPPER_DUMP = -24  # value to send when dumping
-HOPPER_STOP = 0  # value to send when stopping hopper
+TAKE_DUMP_BTTN = CONTROLLER_BUTTONS["START"]
+STOP_BTTN = CONTROLLER_BUTTONS["BACK"]
+
+###################################
+# Global Constants
+# Constants for hopper (150 - 600)
+HOPPER_DUMP = -24   # value to send when dumping
+HOPPER_STOP = 0   # value to send when stopping hopper
 HOPPER_UNDUMP = 24 # value to send when returning to resting state
-# Constants for conveyor spin 
+# Constants for conveyor spin (150 - 600)
 COLLECTOR_SPIN = 24
 COLLECTOR_STOP = 0
 COLLECTOR_RSPIN = -24
-# Constants for conveyor tilt 
+# Constants for conveyor tilt (150 - 600)
 COLLECTOR_TILT = -24
 COLLECTOR_TSTOP = 0
 COLLECTOR_UNTILT = 24
+# Drive constants
+DRIVE_SPEED = 7
+DRIVE_STOP = 0
+TURN_SPEED = 7
+MINING_DRIVE_SPEED = 7
+ARC_DRIVE_SPEED = 7
 ###################################
+
 
 class Joystick_Controller(object):
     '''
@@ -53,31 +63,35 @@ class Joystick_Controller(object):
         '''
         rospy.init_node("joystick_controller")
 
-        self.current_drive_cmd = None   # Stores current drive twist
-        self.hopper_cmd = None          # Stores current hoppy command
-        self.collector_cmd = None       # Stores current collector spin command
-        self.collector_tilt = None      # Stores current collector tilt command
         self.joy_received = False  
 
-        # Load motor parameters
         global HOPPER_DUMP, HOPPER_STOP, HOPPER_UNDUMP 
         global COLLECTOR_SPIN, COLLECTOR_STOP, COLLECTOR_RSPIN 
         global COLLECTOR_TILT, COLLECTOR_TSTOP, COLLECTOR_UNTILT
+        global DRIVE_SPEED, DRIVE_STOP, MINING_DRIVE_SPEED, ARC_TURN_SPEED, TURN_SPEED
         try:
             # Constants for hopper
-            HOPPER_DUMP = rospy.get_param("dump_settings/dump_signal")
-            HOPPER_STOP = rospy.get_param("dump_settings/stop_signal")
-            HOPPER_UNDUMP = rospy.get_param("dump_settings/undump_signal")
+            HOPPER_DUMP = int(rospy.get_param("dump_settings/dump_signal"))
+            HOPPER_STOP = int(rospy.get_param("dump_settings/stop_signal"))
+            HOPPER_UNDUMP = int(rospy.get_param("dump_settings/undump_signal"))
             # Constants for conveyor spin
-            COLLECTOR_SPIN = rospy.get_param("collector_settings/spin_signal")
-            COLLECTOR_STOP = rospy.get_param("collector_settings/spin_stop_signal")
-            COLLECTOR_RSPIN = rospy.get_param("collector_settings/unspin_signal")
+            COLLECTOR_SPIN = int(rospy.get_param("collector_settings/spin_signal"))
+            COLLECTOR_STOP = int(rospy.get_param("collector_settings/spin_stop_signal"))
+            COLLECTOR_RSPIN = int(rospy.get_param("collector_settings/unspin_signal"))
             # Constants for conveyor tilt (150 - 600)
-            COLLECTOR_TILT = rospy.get_param("collector_settings/tilt_signal")
-            COLLECTOR_TSTOP = rospy.get_param("collector_settings/tilt_stop_signal")
-            COLLECTOR_UNTILT = rospy.get_param("collector_settings/untilt_signal")
+            COLLECTOR_TILT = int(rospy.get_param("collector_settings/tilt_signal"))
+            COLLECTOR_TSTOP = int(rospy.get_param("collector_settings/tilt_stop_signal"))
+            COLLECTOR_UNTILT = int(rospy.get_param("collector_settings/untilt_signal"))
+            # Constants for drive speeds
+            DRIVE_SPEED = int(rospy.get_param("drive_settings/drive_speed"))
+            DRIVE_STOP = int(rospy.get_param("drive_settings/drive_stop"))
+            MINING_DRIVE_SPEED = int(rospy.get_param("drive_settings/mining_drive_speed"))
+            ARC_TURN_SPEED = int(rospy.get_param("drive_settings/arc_turn_speed"))
+            TURN_SPEED = int(rospy.get_param("drive_settings/turn_speed"))
         except:
-            rospy.logerr("Failed to load motor parameters.")     
+            rospy.logerr("Failed to load motor parameters.")  
+
+        self.controller_state = Joy()
 
         # Load topic names
         self.joystick_topic       = rospy.get_param("topics/joystick", "joy")
@@ -85,11 +99,13 @@ class Joystick_Controller(object):
         hopper_cmds_topic         = rospy.get_param("topics/hopper_cmds", "hopper_control")
         collector_spin_cmds_topic = rospy.get_param("topics/collector_spin_cmds", "collector_spin_control")
         collector_tilt_cmds_topic = rospy.get_param("topics/collector_tilt_cmds", "collector_tilt_control")
+        dump_topic                = rospy.get_param("topics/dump_cmds", "dump_cmds")
         # Setup publishers
         self.drive_pub = rospy.Publisher(drive_topic, Twist, queue_size = 10)
         self.hopper_pub = rospy.Publisher(hopper_cmds_topic, Int16, queue_size = 10)
         self.collector_spin_pub = rospy.Publisher(collector_spin_cmds_topic, Int16, queue_size = 10)
         self.collector_tilt_pub = rospy.Publisher(collector_tilt_cmds_topic, Int16, queue_size = 10)
+        self.dump_pub = rospy.Publisher(dump_topic, String, queue_size = 10)
         # Setup subscribers
         rospy.Subscriber(self.joystick_topic, Joy, self.joy_callback)
 
@@ -99,61 +115,9 @@ class Joystick_Controller(object):
         '''
         Joy topic callback
         '''
-        ######
-        # Build Twist message
-        ######
-        twister = Twist()
-        # TANK DRIVE
-        twister.linear.x = float(MAX_TANK_SPEED) * data.axes[JOY_TANK_L_AXIS]
-        twister.angular.z = float(MAX_TANK_SPEED) * data.axes[JOY_TANK_R_AXIS]
-
-        # Real Robot Drive
-        #twister.angular.z = MAX_ANGULAR_SPEED * data.axes[JOY_ANGULAR_AXIS]
-        #twister.linear.x = MAX_LINEAR_SPEED * data.axes[JOY_LINEAR_AXIS]
-        self.current_drive_cmd = twister
-        ###########################
-        # Get Hopper command
-        ##########################
-        hopper_cmd = Int16()
-        # get current button state (4 possible states)
-        dump = True if data.buttons[JOY_DUMP_BTTN] == 1 else False
-        undump = True if data.buttons[JOY_UNDUMP_BTTN] == 1 else False
-        # determine what to do based on state
-        if dump and not undump:
-            hopper_cmd.data = HOPPER_DUMP
-        elif not dump and undump:
-            hopper_cmd.data = HOPPER_UNDUMP
-        else:
-            hopper_cmd.data = HOPPER_STOP 
-        self.hopper_cmd = hopper_cmd
-        ###########################
-        # Get Conveyor Spin command
-        ##########################
-        collector_cmd = Int16()
-        spin = True if data.buttons[JOY_CSPIN_BTTN] == 1 else False
-        rspin = True if data.buttons[JOY_CRSPIN_BTTN] == 1 else False
-        if spin and not rspin:
-            collector_cmd.data = COLLECTOR_SPIN
-        elif not spin and rspin:
-            collector_cmd.data = COLLECTOR_RSPIN
-        else:
-            collector_cmd.data = COLLECTOR_STOP
-        self.collector_cmd = collector_cmd
-        ###########################
-        # Get Conveyor tilt command
-        ##########################
-        tilt_cmd = Int16()
-        tilt = True if data.buttons[JOY_CTILT_BTTN] == 1 else False 
-        untilt = True if data.buttons[JOY_CUTILT_BTTN] == 1 else False
-        if tilt and not untilt:
-            tilt_cmd.data = COLLECTOR_TILT
-        elif not tilt and untilt:
-            tilt_cmd.data = COLLECTOR_UNTILT
-        else:
-            tilt_cmd.data = COLLECTOR_TSTOP
-        self.collector_tilt = tilt_cmd
-
+        self.controller_state = data
         self.joy_received = True
+
 
     def run(self):
         '''
@@ -162,17 +126,111 @@ class Joystick_Controller(object):
         rospy.wait_for_message(self.joystick_topic, Joy)  # Wait for messege on joy topic
         rate = rospy.Rate(10)
         while not rospy.is_shutdown():
+            # Grab most recent controller state
+            current_state = self.controller_state
+            self.joy_received = False
+            ######
+            # Build Twist message
+            ######
+            twister = Twist()
+            #####
+            # Get drive command
+            #####
+            lin_val = current_state.axes[JOY_LINEAR_AXIS]
+            ang_val = current_state.axes[JOY_ANGULAR_AXIS]
+
+            mag = math.sqrt(lin_val**2 + ang_val**2)
+            if (lin_val <= SLOP_THRESH) and (lin_val >= -SLOP_THRESH):
+                # Within 0 point slop
+                lin_vel = 0
+                ang_vel = 0
+            else:   
+                lin_vel = (lin_val / mag) * MAX_MAG
+                ang_vel = (ang_val / mag) * MAX_MAG
+
+            twister.linear.x = lin_vel
+            twister.angular.z = ang_vel
+            self.drive_pub.publish(twister)
+
             ###########################
-            # Things that always get published every iteration
-            self.drive_pub.publish(self.current_drive_cmd)
-            self.hopper_pub.publish(self.hopper_cmd)
-            self.collector_spin_pub.publish(self.collector_cmd)
-            self.collector_tilt_pub.publish(self.collector_tilt)
-            if not self.joy_received:
-                continue
+            # Get Hopper command
+            ##########################
+            hopper_cmd = Int16()
+            # get current button state (4 possible states)
+            dump = True if current_state.buttons[JOY_DUMP_BTTN] == 1 else False
+            undump = True if current_state.buttons[JOY_UNDUMP_BTTN] == 1 else False
+            # determine what to do based on state
+            if dump and not undump:
+                hopper_cmd.data = HOPPER_DUMP
+            elif not dump and undump:
+                hopper_cmd.data = HOPPER_UNDUMP
+            else:
+                hopper_cmd.data = HOPPER_STOP 
+            self.hopper_pub.publish(hopper_cmd)
             ###########################
-            # Things that only get published upon receiving a new joy message
+            # Get Conveyor Spin command
+            ##########################
+            collector_cmd = Int16()
+            spin = True if current_state.buttons[JOY_CSPIN_BTTN] == 1 else False
+            rspin = True if current_state.buttons[JOY_CRSPIN_BTTN] == 1 else False
+            if spin and not rspin:
+                collector_cmd.data = COLLECTOR_SPIN
+            elif not spin and rspin:
+                collector_cmd.data = COLLECTOR_RSPIN
+            else:
+                collector_cmd.data = COLLECTOR_STOP
+            self.collector_spin_pub.publish(collector_cmd)
+            ###########################
+            # Get Conveyor tilt command
+            ##########################
+            tilt_cmd = Int16()
+            tilt = True if current_state.buttons[JOY_CTILT_BTTN] == 1 else False 
+            untilt = True if current_state.buttons[JOY_CUTILT_BTTN] == 1 else False
+            if tilt and not untilt:
+                tilt_cmd.data = COLLECTOR_TILT
+            elif not tilt and untilt:
+                tilt_cmd.data = COLLECTOR_UNTILT
+            else:
+                tilt_cmd.data = COLLECTOR_TSTOP
+            self.collector_tilt_pub.publish(tilt_cmd)
+            ############################
+            # take dump command
+            ############################
+            if current_state.buttons[TAKE_DUMP_BTTN] == 1 and self.joy_received:
+                take_dump_cmd = String()
+                take_dump_cmd.data = "DUMP"
+                self.dump_pub.publish(take_dump_cmd)
+
+            if current_state.buttons[STOP_BTTN] == 1 and self.joy_received:
+                take_dump_cmd = String()
+                take_dump_cmd = "STOP"
+                self.dump_pub.publish(take_dump_cmd)
+                self.robot_stop()
+
             rate.sleep()
+
+    def robot_stop(self):
+        '''
+        Calling this function sends stop commands to all motors on robot
+        '''
+        # Hopper stop
+        hopper_stop = Int16()
+        hopper_stop.data = HOPPER_STOP
+        # Collector tilt stop
+        collector_tilt_stop = Int16()
+        collector_tilt_stop.data = COLLECTOR_TSTOP
+        # Collector spin stop 
+        collector_spin_stop = Int16()
+        collector_spin_stop.data = COLLECTOR_STOP
+        # Drive train stop
+        drive_stop = Twist()
+        drive_stop.linear.x = DRIVE_STOP
+        drive_stop.angular.z = DRIVE_STOP
+        # Publish messages
+        self.drive_pub.publish(drive_stop)
+        self.hopper_pub.publish(hopper_stop)
+        self.collector_spin_pub.publish(collector_spin_stop)
+        self.collector_tilt_pub.publish(collector_tilt_stop)
 
     def _exit_handler(self):
         '''
