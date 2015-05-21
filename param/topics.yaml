@@ -15,6 +15,7 @@ topics:
     scoop_safety: scoop_safety                              # ROS Bool msgs, true if scoop safe for driving
     dump_cmds: dump_cmds                                    # ROS String msgs, cmds for dump control
     beacon_lost: beacon_lost                                # ROS Bool msgs, true if beacon lost
+    beacon_lost_filtered: beacon_lost_filtered
     reached_goal: reached_goal                              # ROS Bool msgs, true if robot has navigated to current goal
     lidar_pivot_cmds: lidar_pivot_control                   # ROS String msgs, high level lidar_pivot_cmds
     lidar_pivot_target_angles: lidar_pivot_target_angles    # ROS Float32 msgs, cmds (angles in radians) for lidar pivot servo

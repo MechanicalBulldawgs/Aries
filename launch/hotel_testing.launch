@@ -1,0 +1,6 @@
+<launch>
+    <node pkg="aries" type="beacon_localization.py" output="screen" name="beacon_localizer"/>
+    <node pkg="aries" type="navigator.py" output="screen" name="pfield_navigator"/>
+    
+
+</launch>
