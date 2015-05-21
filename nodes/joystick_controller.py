@@ -129,7 +129,10 @@ class Joystick_Controller(object):
         This function is the processing function for this module.
         '''
         rospy.wait_for_message(self.joystick_topic, Joy)  # Wait for messege on joy topic
-        rate = rospy.Rate(2)
+        rate = rospy.Rate(10)
+        lin_history = [0 for i in xrange(0, 5)]
+        vel_history = [0 for i in xrange(0, 5)]
+
         while not rospy.is_shutdown():
             # Grab most recent controller state
             current_state = self.controller_state
@@ -156,8 +159,20 @@ class Joystick_Controller(object):
             else:   
                 ang_vel = (ang_val / mag) * MAX_MAG
 
-            twister.linear.x = lin_vel
-            twister.angular.z = ang_vel
+            lin_history.pop(0)
+            vel_history.pop(0)
+            lin_history.append(lin_vel)
+            vel_history.append(ang_vel)
+
+            lin_hist_avg = sum(lin_history) / len(lin_history)
+            vel_hist_avg = sum(vel_history) / len(vel_history)
+
+            # mag = math.sqrt(lin_hist_avg**2 + vel_hist_avg**2)
+            # if mag != 0:
+            #     twister.linear.x = (lin_hist_avg / mag) * MAX_MAG
+            #     twister.angular.z = (vel_hist_avg / mag) * MAX_MAG
+            twister.linear.x = lin_hist_avg
+            twister.angular.z = vel_hist_avg
             #if (twister.linear.x != self.prev_drive_state.linear.x) or (twister.angular.z != self.prev_drive_state.angular.z):
             self.drive_pub.publish(twister)
             self.prev_drive_state = twister
