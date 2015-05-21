@@ -147,15 +147,19 @@ class Joystick_Controller(object):
             if (lin_val <= SLOP_THRESH) and (lin_val >= -SLOP_THRESH):
                 # Within 0 point slop
                 lin_vel = 0
-                ang_vel = 0
             else:   
                 lin_vel = (lin_val / mag) * MAX_MAG
+
+            if (ang_val <= SLOP_THRESH) and (ang_val >= -SLOP_THRESH):
+                # Within 0 point slop
+                ang_vel = 0
+            else:   
                 ang_vel = (ang_val / mag) * MAX_MAG
 
             twister.linear.x = lin_vel
             twister.angular.z = ang_vel
-            if (twister.linear.x != self.prev_drive_state.linear.x) or (twister.angular.z != self.prev_drive_state.angular.z):
-                self.drive_pub.publish(twister)
+            #if (twister.linear.x != self.prev_drive_state.linear.x) or (twister.angular.z != self.prev_drive_state.angular.z):
+            self.drive_pub.publish(twister)
             self.prev_drive_state = twister
 
             ###########################
