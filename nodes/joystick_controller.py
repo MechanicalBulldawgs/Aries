@@ -124,7 +124,7 @@ class Joystick_Controller(object):
         This function is the processing function for this module.
         '''
         rospy.wait_for_message(self.joystick_topic, Joy)  # Wait for messege on joy topic
-        rate = rospy.Rate(10)
+        rate = rospy.Rate(2)
         while not rospy.is_shutdown():
             # Grab most recent controller state
             current_state = self.controller_state
