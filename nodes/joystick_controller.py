@@ -93,6 +93,11 @@ class Joystick_Controller(object):
 
         self.controller_state = Joy()
 
+        self.prev_hopper_state = Int16()
+        self.prev_collector_spin_state = Int16()
+        self.prev_collector_tilt_state = Int16()
+        self.prev_drive_state = Twist()
+
         # Load topic names
         self.joystick_topic       = rospy.get_param("topics/joystick", "joy")
         drive_topic               = rospy.get_param("topics/drive_cmds", "cmd_vel")
@@ -128,7 +133,6 @@ class Joystick_Controller(object):
         while not rospy.is_shutdown():
             # Grab most recent controller state
             current_state = self.controller_state
-            self.joy_received = False
             ######
             # Build Twist message
             ######
@@ -150,7 +154,9 @@ class Joystick_Controller(object):
 
             twister.linear.x = lin_vel
             twister.angular.z = ang_vel
-            self.drive_pub.publish(twister)
+            if (twister.linear.x != self.prev_drive_state.linear.x) or (twister.angular.z != self.prev_drive_state.angular.z):
+                self.drive_pub.publish(twister)
+            self.prev_drive_state = twister
 
             ###########################
             # Get Hopper command
@@ -166,7 +172,9 @@ class Joystick_Controller(object):
                 hopper_cmd.data = HOPPER_UNDUMP
             else:
                 hopper_cmd.data = HOPPER_STOP 
-            self.hopper_pub.publish(hopper_cmd)
+            if hopper_cmd.data != self.prev_hopper_state.data:
+                self.hopper_pub.publish(hopper_cmd)
+            self.prev_hopper_state = hopper_cmd
             ###########################
             # Get Conveyor Spin command
             ##########################
@@ -179,7 +187,9 @@ class Joystick_Controller(object):
                 collector_cmd.data = COLLECTOR_RSPIN
             else:
                 collector_cmd.data = COLLECTOR_STOP
-            self.collector_spin_pub.publish(collector_cmd)
+            if collector_cmd.data != self.prev_collector_spin_state.data:
+                self.collector_spin_pub.publish(collector_cmd)
+            self.prev_collector_spin_state = collector_cmd 
             ###########################
             # Get Conveyor tilt command
             ##########################
@@ -192,7 +202,10 @@ class Joystick_Controller(object):
                 tilt_cmd.data = COLLECTOR_UNTILT
             else:
                 tilt_cmd.data = COLLECTOR_TSTOP
-            self.collector_tilt_pub.publish(tilt_cmd)
+            
+            if tilt_cmd.data != self.prev_collector_tilt_state.data:
+                self.collector_tilt_pub.publish(tilt_cmd)
+            self.prev_collector_tilt_state = tilt_cmd
             ############################
             # take dump command
             ############################
@@ -206,7 +219,7 @@ class Joystick_Controller(object):
                 take_dump_cmd = "STOP"
                 self.dump_pub.publish(take_dump_cmd)
                 self.robot_stop()
-
+            self.joy_received = False
             rate.sleep()
 
     def robot_stop(self):
